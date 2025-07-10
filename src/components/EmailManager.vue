@@ -1,87 +1,43 @@
 <template>
   <div class="email-manager">
-    <!-- Generate New Email Section -->
-    <div class="generate-section">
-      <n-card size="small" :bordered="false">
-        <template #header>
-          <div class="section-header">
-            <n-icon size="18">
+    <!-- Header with Create Button -->
+    <div class="manager-header">
+      <div class="header-title">
+        <n-icon size="20">
+          <MailIcon />
+        </n-icon>
+        我的邮箱
+        <n-badge
+          v-if="emailStore.addresses.length > 0"
+          :value="emailStore.addresses.length"
+          :max="99"
+          type="info"
+          style="margin-left: 8px;"
+        />
+      </div>
+
+      <div class="header-actions">
+        <n-button
+          type="primary"
+          size="small"
+          @click="showCreateModal = true"
+          :loading="loading.creating"
+        >
+          <template #icon>
+            <n-icon>
               <AddIcon />
             </n-icon>
-            生成新邮箱
-          </div>
-        </template>
-        
-        <n-form ref="formRef" :model="form" :rules="rules" size="small">
-          <n-form-item path="name" label="前缀">
-            <n-input
-              v-model:value="form.name"
-              placeholder="输入前缀或留空随机生成"
-              :disabled="loading.creating"
-            >
-              <template #suffix>
-                <n-button
-                  text
-                  size="tiny"
-                  @click="generateRandomPrefix"
-                  :disabled="loading.creating"
-                >
-                  <n-icon size="14">
-                    <DiceIcon />
-                  </n-icon>
-                </n-button>
-              </template>
-            </n-input>
-          </n-form-item>
-          
-          <n-form-item path="domain" label="域名">
-            <n-select
-              v-model:value="form.domain"
-              :options="domainOptions"
-              placeholder="选择域名"
-              :disabled="loading.creating"
-            />
-          </n-form-item>
-          
-          <n-form-item>
-            <n-button
-              type="primary"
-              block
-              :loading="loading.creating"
-              @click="handleCreateEmail"
-            >
-              <template #icon>
-                <n-icon>
-                  <AddIcon />
-                </n-icon>
-              </template>
-              生成邮箱
-            </n-button>
-          </n-form-item>
-        </n-form>
-      </n-card>
-    </div>
+          </template>
+          生成新邮箱
+        </n-button>
 
-    <!-- Email List Section -->
-    <div class="email-list-section">
-      <div class="list-header">
-        <span class="list-title">
-          我的邮箱
-          <n-badge
-            v-if="emailStore.addresses.length > 0"
-            :value="emailStore.addresses.length"
-            :max="99"
-            type="info"
-            style="margin-left: 8px;"
-          />
-        </span>
         <n-button
           size="small"
           quaternary
           circle
-          @click="emailStore.loadAddresses"
-          :loading="loading.addresses"
-          title="刷新邮箱列表"
+          @click="handleRefreshMails"
+          :loading="loading.mails"
+          title="刷新当前邮箱的邮件"
         >
           <template #icon>
             <n-icon>
@@ -90,9 +46,12 @@
           </template>
         </n-button>
       </div>
+    </div>
 
+    <!-- Email List Section -->
+    <div class="email-list-section">
       <div class="email-list">
-        <n-scrollbar style="max-height: 400px;">
+        <n-scrollbar style="max-height: 100%;">
           <n-empty
             v-if="!emailStore.hasAddresses && !loading.addresses"
             description="还没有创建邮箱地址"
@@ -180,23 +139,69 @@
       </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <n-button
-        size="small"
-        quaternary
-        block
-        @click="clearAllSelection"
-        :disabled="!emailStore.selectedAddress"
-      >
-        <template #icon>
-          <n-icon>
-            <ClearIcon />
-          </n-icon>
-        </template>
-        Clear Selection
-      </n-button>
-    </div>
+    <!-- Create Email Modal -->
+    <n-modal
+      v-model:show="showCreateModal"
+      preset="card"
+      title="生成新邮箱"
+      size="small"
+      :bordered="false"
+      :segmented="true"
+    >
+      <n-form ref="formRef" :model="form" :rules="rules" size="medium">
+        <n-form-item path="name" label="邮箱前缀">
+          <n-input
+            v-model:value="form.name"
+            placeholder="输入前缀或留空随机生成"
+            :disabled="loading.creating"
+          >
+            <template #suffix>
+              <n-button
+                text
+                size="small"
+                @click="generateRandomPrefix"
+                :disabled="loading.creating"
+                title="随机生成前缀"
+              >
+                <n-icon size="16">
+                  <DiceIcon />
+                </n-icon>
+              </n-button>
+            </template>
+          </n-input>
+        </n-form-item>
+
+        <n-form-item path="domain" label="邮箱域名">
+          <n-select
+            v-model:value="form.domain"
+            :options="domainOptions"
+            placeholder="选择域名"
+            :disabled="loading.creating"
+          />
+        </n-form-item>
+
+        <div class="modal-actions">
+          <n-button
+            @click="showCreateModal = false"
+            :disabled="loading.creating"
+          >
+            取消
+          </n-button>
+          <n-button
+            type="primary"
+            :loading="loading.creating"
+            @click="handleCreateEmailAndClose"
+          >
+            <template #icon>
+              <n-icon>
+                <AddIcon />
+              </n-icon>
+            </template>
+            生成邮箱
+          </n-button>
+        </div>
+      </n-form>
+    </n-modal>
   </div>
 </template>
 
@@ -216,6 +221,7 @@ import {
   NPopconfirm,
   NBadge,
   NText,
+  NModal,
   useMessage,
   type FormInst,
   type FormRules
@@ -226,7 +232,6 @@ import {
   Refresh as RefreshIcon,
   Copy as CopyIcon,
   Trash as DeleteIcon,
-  Close as ClearIcon,
   Dice as DiceIcon
 } from '@vicons/ionicons5'
 import { useEmailStore } from '@/stores'
@@ -235,6 +240,9 @@ import type { EmailAddress } from '@/types'
 
 const emailStore = useEmailStore()
 const message = useMessage()
+
+// Modal state
+const showCreateModal = ref(false)
 
 // Form state
 const formRef = ref<FormInst | null>(null)
@@ -267,19 +275,22 @@ function generateRandomPrefix() {
   form.name = generateRandomString(8)
 }
 
-// Handle create email
-async function handleCreateEmail() {
+// Handle create email and close modal
+async function handleCreateEmailAndClose() {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
-    
+
     const prefix = form.name.trim() || generateRandomString(8)
     await emailStore.createAddress(prefix, form.domain)
-    
-    // Reset form
+
+    // Reset form and close modal
     form.name = ''
     form.domain = COMMON_DOMAINS[0]
+    showCreateModal.value = false
+
+    message.success('邮箱创建成功！')
   } catch (error) {
     console.error('Create email error:', error)
   }
@@ -299,16 +310,23 @@ async function handleDeleteEmail(id: string) {
 async function copyEmailAddress(address: string) {
   const success = await copyToClipboard(address)
   if (success) {
-    message.success('Email address copied to clipboard')
+    message.success('邮箱地址已复制到剪贴板')
   } else {
-    message.error('Failed to copy email address')
+    message.error('复制邮箱地址失败')
   }
 }
 
-// Clear all selection
-function clearAllSelection() {
-  emailStore.clearSelection()
+// Refresh mails for selected address
+async function handleRefreshMails() {
+  if (emailStore.selectedAddress) {
+    await emailStore.loadMails(emailStore.selectedAddress.address)
+    message.success('邮件列表已刷新')
+  } else {
+    message.warning('请先选择一个邮箱地址')
+  }
 }
+
+
 
 // Format date for display
 function formatDate(dateString: string) {
@@ -325,15 +343,30 @@ function formatDate(dateString: string) {
   padding: 16px;
 }
 
-.generate-section {
+.manager-header {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--n-card-color);
+  border: 1px solid var(--n-border-color);
+  border-radius: 6px;
 }
 
-.section-header {
+.header-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
+  font-size: 16px;
+  color: var(--n-text-color);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .email-list-section {
@@ -341,24 +374,16 @@ function formatDate(dateString: string) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-}
-
-.list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding: 0 4px;
-}
-
-.list-title {
-  font-weight: 600;
-  color: var(--n-text-color);
+  background: var(--n-card-color);
+  border: 1px solid var(--n-border-color);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .email-list {
   flex: 1;
   min-height: 0;
+  padding: 8px;
 }
 
 .loading-spin {
@@ -470,5 +495,22 @@ function formatDate(dateString: string) {
   .email-actions {
     opacity: 1; /* Always show on mobile */
   }
+
+  .manager-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-actions {
+    justify-content: space-between;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
 }
 </style>
