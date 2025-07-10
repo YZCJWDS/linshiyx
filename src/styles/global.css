@@ -1,0 +1,289 @@
+/* Global CSS Variables */
+:root {
+  /* Colors */
+  --primary-color: #18a058;
+  --primary-color-hover: #36ad6a;
+  --primary-color-pressed: #0c7a43;
+  --primary-color-suppl: rgba(24, 160, 88, 0.1);
+  
+  --info-color: #2080f0;
+  --info-color-hover: #4098fc;
+  --info-color-pressed: #1060c9;
+  --info-color-suppl: rgba(32, 128, 240, 0.1);
+  
+  --warning-color: #f0a020;
+  --warning-color-hover: #fcb040;
+  --warning-color-pressed: #c97c10;
+  --warning-color-suppl: rgba(240, 160, 32, 0.1);
+  
+  --error-color: #d03050;
+  --error-color-hover: #de576d;
+  --error-color-pressed: #ab1f3f;
+  --error-color-suppl: rgba(208, 48, 80, 0.1);
+  
+  --success-color: #18a058;
+  --success-color-hover: #36ad6a;
+  --success-color-pressed: #0c7a43;
+  --success-color-suppl: rgba(24, 160, 88, 0.1);
+  
+  /* Text Colors */
+  --text-color: #333639;
+  --text-color-2: #606266;
+  --text-color-3: #909399;
+  --text-color-disabled: #c0c4cc;
+  
+  /* Background Colors */
+  --body-color: #fff;
+  --card-color: #fff;
+  --modal-color: #fff;
+  --popover-color: #fff;
+  
+  /* Border Colors */
+  --border-color: #e0e0e6;
+  --divider-color: #e0e0e6;
+  
+  /* Box Shadow */
+  --box-shadow-1: 0 1px 2px -2px rgba(0, 0, 0, 0.08), 0 3px 6px 0 rgba(0, 0, 0, 0.06), 0 5px 12px 4px rgba(0, 0, 0, 0.04);
+  --box-shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --box-shadow-3: 0 6px 16px -9px rgba(0, 0, 0, 0.08), 0 9px 28px 0 rgba(0, 0, 0, 0.05), 0 12px 48px 16px rgba(0, 0, 0, 0.03);
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  
+  /* Border Radius */
+  --border-radius-sm: 3px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 10px;
+  
+  /* Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  
+  /* Line Heights */
+  --line-height-sm: 1.25;
+  --line-height-md: 1.5;
+  --line-height-lg: 1.75;
+  
+  /* Z-Index */
+  --z-index-dropdown: 1000;
+  --z-index-modal: 2000;
+  --z-index-notification: 3000;
+  --z-index-tooltip: 4000;
+}
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+  /* Text Colors */
+  --text-color: rgba(255, 255, 255, 0.9);
+  --text-color-2: rgba(255, 255, 255, 0.7);
+  --text-color-3: rgba(255, 255, 255, 0.5);
+  --text-color-disabled: rgba(255, 255, 255, 0.3);
+  
+  /* Background Colors */
+  --body-color: #101014;
+  --card-color: #18181c;
+  --modal-color: #1e1e22;
+  --popover-color: #1e1e22;
+  
+  /* Border Colors */
+  --border-color: #262626;
+  --divider-color: #262626;
+}
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  background-color: var(--body-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Focus Styles */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Selection Styles */
+::selection {
+  background: var(--primary-color-suppl);
+  color: var(--primary-color);
+}
+
+/* Link Styles */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--primary-color-hover);
+}
+
+a:active {
+  color: var(--primary-color-pressed);
+}
+
+/* Button Reset */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Input Reset */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+}
+
+/* Image Styles */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Utility Classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.break-words {
+  word-break: break-word;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+/* Animation Classes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from {
+  transform: translateX(-100%);
+}
+
+.slide-leave-to {
+  transform: translateX(100%);
+}
+
+.scale-enter-active,
+.scale-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.scale-enter-from,
+.scale-leave-to {
+  transform: scale(0.9);
+}
+
+/* Loading Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  html {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 12px;
+  }
+}
