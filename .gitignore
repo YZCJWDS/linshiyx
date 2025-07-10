@@ -154,3 +154,6 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Reference frontend (keep local but don't commit)
+frontend/

@@ -52,17 +52,29 @@ export const useEmailStore = defineStore('email', () => {
     }
   }
 
-  async function createAddress(name: string, domain: string, enablePrefix = true) {
+  async function createAddress(name: string, domain: string, enablePrefix = true, cfToken?: string) {
     loading.value.creating = true
     try {
-      console.log('Creating address with data:', { enablePrefix, name, domain })
+      console.log('Creating address with data:', { enablePrefix, name, domain, cfToken })
+
+      // 使用新的 API 调用方式
       const newAddress = await addressApi.create({
         enablePrefix,
         name,
-        domain
+        domain,
+        cf_token: cfToken
       })
+
+      // 将新地址添加到列表开头
       addresses.value.unshift(newAddress)
+
+      // 如果这是第一个地址，自动选中它
+      if (!selectedAddress.value) {
+        selectedAddress.value = newAddress
+      }
+
       uiStore.showSuccess('邮箱地址创建成功')
+      console.log('Address created successfully:', newAddress)
       return newAddress
     } catch (error) {
       console.error('Create address error:', error)
@@ -76,6 +88,8 @@ export const useEmailStore = defineStore('email', () => {
           errorMessage = 'API端点未找到，请检查后端服务'
         } else if (error.message.includes('Network error')) {
           errorMessage = '网络连接失败，请检查网络连接'
+        } else if (error.message.includes('401')) {
+          errorMessage = '认证失败，请检查访问权限'
         } else {
           errorMessage = `创建失败: ${error.message}`
         }
@@ -113,24 +127,35 @@ export const useEmailStore = defineStore('email', () => {
   async function loadMails(address?: string, keyword?: string) {
     loading.value.mails = true
     try {
-      // 需要使用当前选中地址的 JWT
-      const jwt = selectedAddress.value?.jwt
-      if (!jwt) {
-        console.warn('No JWT available for loading mails')
-        mails.value = []
-        return
-      }
+      console.log('Loading mails for address:', address, 'keyword:', keyword)
 
+      // 使用新的 API 调用方式，不需要 JWT 参数
       const response = await mailApi.getAll({
         limit: 100,
         offset: 0,
         address,
         keyword
-      }, jwt)
+      })
+
       mails.value = response.results || []
+      console.log('Loaded mails:', mails.value.length)
     } catch (error) {
-      uiStore.showError('加载邮件失败')
       console.error('Load mails error:', error)
+
+      // 提供更详细的错误信息
+      let errorMessage = '加载邮件失败'
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = '认证失败，请重新登录'
+        } else if (error.message.includes('404')) {
+          errorMessage = '邮件服务不可用'
+        } else {
+          errorMessage = `加载失败: ${error.message}`
+        }
+      }
+
+      uiStore.showError(errorMessage)
+      mails.value = []
     } finally {
       loading.value.mails = false
     }
@@ -143,24 +168,36 @@ export const useEmailStore = defineStore('email', () => {
 
   async function deleteMail(id: string) {
     try {
-      const jwt = selectedAddress.value?.jwt
-      if (!jwt) {
-        uiStore.showError('无法删除邮件：缺少访问凭证')
-        return
-      }
+      console.log('Deleting mail:', id)
 
-      await mailApi.delete(id, jwt)
+      // 使用新的 API 调用方式，不需要 JWT 参数
+      await mailApi.delete(id)
+
+      // 从列表中移除已删除的邮件
       mails.value = mails.value.filter(mail => mail.id !== id)
 
-      // Clear selection if deleted mail was selected
+      // 如果删除的是当前选中的邮件，清除选择
       if (selectedMail.value?.id === id) {
         selectedMail.value = null
       }
 
       uiStore.showSuccess('邮件删除成功')
+      console.log('Mail deleted successfully')
     } catch (error) {
-      uiStore.showError('删除邮件失败')
       console.error('Delete mail error:', error)
+
+      let errorMessage = '删除邮件失败'
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = '认证失败，无法删除邮件'
+        } else if (error.message.includes('404')) {
+          errorMessage = '邮件不存在或已被删除'
+        } else {
+          errorMessage = `删除失败: ${error.message}`
+        }
+      }
+
+      uiStore.showError(errorMessage)
     }
   }
 
@@ -181,17 +218,22 @@ export const useEmailStore = defineStore('email', () => {
 
   async function selectMail(mail: EmailMessage) {
     selectedMail.value = mail
+    console.log('Selected mail:', mail)
 
-    // 如果需要获取完整邮件内容，可以调用详情 API
+    // 获取完整邮件内容
     try {
-      const jwt = selectedAddress.value?.jwt
-      if (jwt && mail.id) {
-        const fullMail = await mailApi.getById(mail.id, jwt)
+      if (mail.id) {
+        console.log('Loading full mail details for:', mail.id)
+
+        // 使用新的 API 调用方式，不需要 JWT 参数
+        const fullMail = await mailApi.getById(mail.id)
         selectedMail.value = fullMail
+        console.log('Loaded full mail details:', fullMail)
       }
     } catch (error) {
       console.error('Failed to load mail details:', error)
       // 即使获取详情失败，也保持基本的邮件信息
+      uiStore.showError('加载邮件详情失败')
     }
   }
 

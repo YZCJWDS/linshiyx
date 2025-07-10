@@ -50,9 +50,10 @@ export interface UserSettings {
 
 // API Request Types
 export interface CreateAddressRequest {
-  enablePrefix: boolean
+  enablePrefix?: boolean
   name: string
   domain: string
+  cf_token?: string  // 添加 Cloudflare Turnstile token 支持
 }
 
 export interface SendMailRequest {
