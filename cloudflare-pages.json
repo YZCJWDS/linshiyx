@@ -1,0 +1,22 @@
+{
+  "build": {
+    "command": "npm install && npm run build",
+    "outputDirectory": "dist",
+    "environment": {
+      "NODE_VERSION": "18",
+      "VITE_API_BASE_URL": "https://apimail.yzcjwds.xyz"
+    }
+  },
+  "preview": {
+    "environment": {
+      "NODE_VERSION": "18",
+      "VITE_API_BASE_URL": "https://apimail.yzcjwds.xyz"
+    }
+  },
+  "production": {
+    "environment": {
+      "NODE_VERSION": "18",
+      "VITE_API_BASE_URL": "https://apimail.yzcjwds.xyz"
+    }
+  }
+}
