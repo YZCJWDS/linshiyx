@@ -45,6 +45,7 @@ export interface UserSettings {
   enableMailAllowList: boolean
   mailAllowList: string[]
   maxAddressCount: number
+  domains?: string[]  // 添加域名列表支持
 }
 
 // API Request Types

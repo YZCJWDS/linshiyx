@@ -52,6 +52,7 @@
             <n-badge :value="emailStore.addresses.length" :max="99" type="info" />
           </div>
           <div class="column-content">
+            <ApiTester />
             <EmailManager />
           </div>
         </div>
@@ -115,6 +116,7 @@ import {
 } from '@vicons/ionicons5'
 import { useEmailStore, useUiStore, useAuthStore } from '@/stores'
 import { useKeyboard, commonShortcuts } from '@/composables/useKeyboard'
+import ApiTester from './ApiTester.vue'
 import EmailManager from './EmailManager.vue'
 import MailList from './MailList.vue'
 import MailDetail from './MailDetail.vue'

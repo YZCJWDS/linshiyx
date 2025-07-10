@@ -55,6 +55,7 @@ export const useEmailStore = defineStore('email', () => {
   async function createAddress(name: string, domain: string, enablePrefix = true) {
     loading.value.creating = true
     try {
+      console.log('Creating address with data:', { enablePrefix, name, domain })
       const newAddress = await addressApi.create({
         enablePrefix,
         name,
@@ -64,8 +65,23 @@ export const useEmailStore = defineStore('email', () => {
       uiStore.showSuccess('邮箱地址创建成功')
       return newAddress
     } catch (error) {
-      uiStore.showError('创建邮箱地址失败')
       console.error('Create address error:', error)
+
+      // 提供更详细的错误信息
+      let errorMessage = '创建邮箱地址失败'
+      if (error instanceof Error) {
+        if (error.message.includes('405')) {
+          errorMessage = '后端API不支持此操作，请检查API配置'
+        } else if (error.message.includes('404')) {
+          errorMessage = 'API端点未找到，请检查后端服务'
+        } else if (error.message.includes('Network error')) {
+          errorMessage = '网络连接失败，请检查网络连接'
+        } else {
+          errorMessage = `创建失败: ${error.message}`
+        }
+      }
+
+      uiStore.showError(errorMessage)
       throw error
     } finally {
       loading.value.creating = false
