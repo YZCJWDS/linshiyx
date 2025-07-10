@@ -337,20 +337,38 @@ function getMailContent(): string {
   const rawContent = mail.message || mail.raw || mail.body || mail.content || ''
 
   // 如果内容包含 MIME 结构，尝试解析
-  if (rawContent.includes('Content-Type:') && rawContent.includes('base64')) {
+  if (rawContent.includes('Content-Type:')) {
+    console.log('📧 Detected MIME content, parsing...')
     return parseEmailContent(rawContent)
   }
 
   return rawContent
 }
 
+// 解码 Quoted-Printable 内容
+function decodeQuotedPrintable(content: string): string {
+  return content
+    // 解码 =XX 格式的十六进制字符
+    .replace(/=([0-9A-F]{2})/gi, (match, hex) => {
+      return String.fromCharCode(parseInt(hex, 16))
+    })
+    // 移除软换行（行末的 =）
+    .replace(/=\r?\n/g, '')
+    // 处理其他常见的 QP 编码
+    .replace(/=\r/g, '')
+    .replace(/=\n/g, '')
+}
+
 // 解析 MIME 邮件内容
 function parseEmailContent(rawEmail: string): string {
   try {
-    // 查找 base64 编码的文本内容
+    console.log('🔍 Parsing email content...')
+
+    // 1. 查找 Base64 编码的文本内容
     const base64Matches = rawEmail.match(/Content-Type: text\/plain[\s\S]*?Content-Transfer-Encoding: base64\s*\n\s*([A-Za-z0-9+/=\s]+)/i)
 
     if (base64Matches && base64Matches[1]) {
+      console.log('📦 Found Base64 encoded content')
       // 清理 base64 字符串（移除换行和空格）
       const base64Content = base64Matches[1].replace(/\s/g, '')
 
@@ -362,32 +380,60 @@ function parseEmailContent(rawEmail: string): string {
         const utf8Content = decodeURIComponent(escape(decodedContent))
 
         // 清理内容（移除多余的换行）
-        return utf8Content.replace(/\r?\n/g, '\n').trim()
+        const cleanContent = utf8Content.replace(/\r?\n/g, '\n').trim()
+        console.log('✅ Base64 decoded successfully')
+        return cleanContent
       } catch (decodeError) {
-        console.warn('Failed to decode base64 content:', decodeError)
+        console.warn('❌ Failed to decode base64 content:', decodeError)
         return decodedContent.trim()
       }
     }
 
-    // 如果没找到 base64 内容，尝试查找普通文本
+    // 2. 查找 Quoted-Printable 编码的文本内容
+    const qpMatches = rawEmail.match(/Content-Type: text\/plain[\s\S]*?Content-Transfer-Encoding: quoted-printable\s*\n\s*([\s\S]*?)(?=\n----|\n--\w|$)/i)
+
+    if (qpMatches && qpMatches[1]) {
+      console.log('📝 Found Quoted-Printable encoded content')
+      try {
+        const qpContent = qpMatches[1]
+        const decodedContent = decodeQuotedPrintable(qpContent)
+
+        // 清理内容
+        const cleanContent = decodedContent
+          .replace(/\r?\n/g, '\n')
+          .replace(/\n\s*\n\s*\n/g, '\n\n') // 合并多个空行
+          .trim()
+
+        console.log('✅ Quoted-Printable decoded successfully')
+        return cleanContent
+      } catch (decodeError) {
+        console.warn('❌ Failed to decode quoted-printable content:', decodeError)
+        return qpMatches[1].trim()
+      }
+    }
+
+    // 3. 查找普通文本内容
     const textMatch = rawEmail.match(/Content-Type: text\/plain[\s\S]*?\n\n([\s\S]*?)(?=\n-----|$)/i)
     if (textMatch && textMatch[1]) {
+      console.log('📄 Found plain text content')
       return textMatch[1].trim()
     }
 
-    // 最后尝试提取邮件正文（在所有头信息之后）
+    // 4. 最后尝试提取邮件正文（在所有头信息之后）
     const bodyMatch = rawEmail.match(/\n\n([\s\S]*?)(?=\n------|\n--\s*$|$)/)
     if (bodyMatch && bodyMatch[1]) {
       const bodyContent = bodyMatch[1].trim()
       // 如果不是 MIME 边界，返回内容
       if (!bodyContent.startsWith('------') && !bodyContent.startsWith('This is a multi-part')) {
+        console.log('📋 Found body content')
         return bodyContent
       }
     }
 
+    console.warn('⚠️ No parseable content found')
     return '邮件内容解析失败'
   } catch (error) {
-    console.error('Error parsing email content:', error)
+    console.error('❌ Error parsing email content:', error)
     return '邮件内容解析出错'
   }
 }
