@@ -10,24 +10,11 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
-  optimizeDeps: {
-    include: [
-      'naive-ui',
-      '@vicons/ionicons5',
-      'vueuc',
-      'vooks',
-      'date-fns',
-      'date-fns-tz'
-    ],
-  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser',
-    rollupOptions: {
-      output: {}
-    }
+    minify: 'terser'
   },
   server: {
     port: 3000,
