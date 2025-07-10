@@ -21,11 +21,15 @@ export const useEmailStore = defineStore('email', () => {
     maxAddressCount: 5
   })
 
-  // 本地存储键名
+  // 本地存储键名 - 使用更独特的键名避免冲突
   const STORAGE_KEYS = {
-    ADDRESSES: 'temp_email_addresses',
-    SELECTED_ADDRESS: 'temp_email_selected_address'
+    ADDRESSES: 'linshiyx_user_addresses_v2',
+    SELECTED_ADDRESS: 'linshiyx_selected_address_v2',
+    STORAGE_VERSION: 'linshiyx_storage_version'
   }
+
+  // 存储版本，用于数据迁移
+  const STORAGE_VERSION = '2.0'
 
   // Loading states
   const loading = ref({
@@ -40,54 +44,183 @@ export const useEmailStore = defineStore('email', () => {
   function saveAddressesToStorage() {
     try {
       const addressesToSave = addresses.value
-      localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(addressesToSave))
-      console.log('Saved', addressesToSave.length, 'addresses to localStorage:', addressesToSave.map(addr => addr.address))
+      const dataToSave = {
+        version: STORAGE_VERSION,
+        timestamp: Date.now(),
+        addresses: addressesToSave
+      }
+
+      localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(dataToSave))
+      localStorage.setItem(STORAGE_KEYS.STORAGE_VERSION, STORAGE_VERSION)
+
+      console.log('✅ Saved', addressesToSave.length, 'addresses to localStorage:', addressesToSave.map(addr => addr.address))
+      console.log('📦 Storage key:', STORAGE_KEYS.ADDRESSES)
     } catch (error) {
-      console.error('Failed to save addresses to localStorage:', error)
+      console.error('❌ Failed to save addresses to localStorage:', error)
     }
   }
 
   function loadAddressesFromStorage() {
     try {
+      console.log('📂 Loading addresses from storage key:', STORAGE_KEYS.ADDRESSES)
+
+      // 尝试从新版本存储加载
       const stored = localStorage.getItem(STORAGE_KEYS.ADDRESSES)
       if (stored) {
-        const parsedAddresses = JSON.parse(stored)
-        if (Array.isArray(parsedAddresses)) {
-          addresses.value = parsedAddresses
-          console.log('Loaded addresses from storage:', parsedAddresses.length)
+        const parsedData = JSON.parse(stored)
+
+        // 检查是否是新版本格式
+        if (parsedData && parsedData.version && parsedData.addresses) {
+          console.log('✅ Found v2 storage format, version:', parsedData.version)
+          addresses.value = parsedData.addresses
+          console.log('📧 Loaded', addresses.value.length, 'addresses from storage')
+          return
+        }
+
+        // 兼容旧版本格式（直接数组）
+        if (Array.isArray(parsedData)) {
+          console.log('⚠️ Found legacy storage format, migrating...')
+          addresses.value = parsedData
+          console.log('📧 Loaded', addresses.value.length, 'addresses from legacy storage')
+
+          // 迁移到新格式
+          saveAddressesToStorage()
+          return
         }
       }
+
+      // 尝试从旧版本键名加载（兼容性）
+      const legacyKeys = ['temp_email_addresses', 'emailAddresses', 'addresses']
+      for (const key of legacyKeys) {
+        const legacyData = localStorage.getItem(key)
+        if (legacyData) {
+          try {
+            const parsedLegacy = JSON.parse(legacyData)
+            if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
+              console.log(`⚠️ Found data in legacy key "${key}", migrating...`)
+              addresses.value = parsedLegacy
+              console.log('📧 Loaded', addresses.value.length, 'addresses from legacy key')
+
+              // 迁移到新格式
+              saveAddressesToStorage()
+
+              // 清理旧数据
+              localStorage.removeItem(key)
+              return
+            }
+          } catch (e) {
+            console.warn(`Failed to parse legacy storage key "${key}":`, e)
+          }
+        }
+      }
+
+      console.log('ℹ️ No stored addresses found')
     } catch (error) {
-      console.error('Failed to load addresses from localStorage:', error)
+      console.error('❌ Failed to load addresses from localStorage:', error)
     }
   }
 
   function saveSelectedAddressToStorage() {
     try {
       if (selectedAddress.value) {
-        localStorage.setItem(STORAGE_KEYS.SELECTED_ADDRESS, JSON.stringify(selectedAddress.value))
+        const dataToSave = {
+          version: STORAGE_VERSION,
+          timestamp: Date.now(),
+          address: selectedAddress.value
+        }
+        localStorage.setItem(STORAGE_KEYS.SELECTED_ADDRESS, JSON.stringify(dataToSave))
+        console.log('✅ Saved selected address to storage:', selectedAddress.value.address)
       } else {
         localStorage.removeItem(STORAGE_KEYS.SELECTED_ADDRESS)
+        console.log('ℹ️ Removed selected address from storage (none selected)')
       }
     } catch (error) {
-      console.error('Failed to save selected address to localStorage:', error)
+      console.error('❌ Failed to save selected address to localStorage:', error)
     }
   }
 
   function loadSelectedAddressFromStorage() {
     try {
+      console.log('📂 Loading selected address from storage key:', STORAGE_KEYS.SELECTED_ADDRESS)
+
+      // 尝试从新版本存储加载
       const stored = localStorage.getItem(STORAGE_KEYS.SELECTED_ADDRESS)
       if (stored) {
-        const parsedAddress = JSON.parse(stored)
-        // 确保这个地址还在地址列表中
-        const existingAddress = addresses.value.find(addr => addr.id === parsedAddress.id)
-        if (existingAddress) {
-          selectedAddress.value = existingAddress
-          console.log('Loaded selected address from storage:', existingAddress.address)
+        const parsedData = JSON.parse(stored)
+
+        // 检查是否是新版本格式
+        if (parsedData && parsedData.version && parsedData.address) {
+          console.log('✅ Found v2 selected address format')
+          const storedAddress = parsedData.address
+
+          // 确保这个地址还在地址列表中
+          const existingAddress = addresses.value.find(addr => addr.id === storedAddress.id)
+          if (existingAddress) {
+            selectedAddress.value = existingAddress
+            console.log('📧 Loaded selected address from storage:', existingAddress.address)
+            return
+          } else {
+            console.log('⚠️ Stored selected address not found in address list')
+          }
+        }
+
+        // 兼容旧版本格式（直接对象）
+        if (parsedData && parsedData.id) {
+          console.log('⚠️ Found legacy selected address format, migrating...')
+
+          // 确保这个地址还在地址列表中
+          const existingAddress = addresses.value.find(addr => addr.id === parsedData.id)
+          if (existingAddress) {
+            selectedAddress.value = existingAddress
+            console.log('📧 Loaded selected address from legacy storage:', existingAddress.address)
+
+            // 迁移到新格式
+            saveSelectedAddressToStorage()
+            return
+          }
         }
       }
+
+      // 尝试从旧版本键名加载（兼容性）
+      const legacyKeys = ['temp_email_selected_address', 'selectedAddress']
+      for (const key of legacyKeys) {
+        const legacyData = localStorage.getItem(key)
+        if (legacyData) {
+          try {
+            const parsedLegacy = JSON.parse(legacyData)
+            if (parsedLegacy && parsedLegacy.id) {
+              console.log(`⚠️ Found selected address in legacy key "${key}", migrating...`)
+
+              // 确保这个地址还在地址列表中
+              const existingAddress = addresses.value.find(addr => addr.id === parsedLegacy.id)
+              if (existingAddress) {
+                selectedAddress.value = existingAddress
+                console.log('📧 Loaded selected address from legacy key:', existingAddress.address)
+
+                // 迁移到新格式
+                saveSelectedAddressToStorage()
+
+                // 清理旧数据
+                localStorage.removeItem(key)
+                return
+              }
+            }
+          } catch (e) {
+            console.warn(`Failed to parse legacy selected address key "${key}":`, e)
+          }
+        }
+      }
+
+      // 如果没有选中的地址但有地址列表，自动选择第一个
+      if (!selectedAddress.value && addresses.value.length > 0) {
+        console.log('ℹ️ No selected address found, auto-selecting first address')
+        selectedAddress.value = addresses.value[0]
+        saveSelectedAddressToStorage()
+      } else {
+        console.log('ℹ️ No stored selected address found')
+      }
     } catch (error) {
-      console.error('Failed to load selected address from localStorage:', error)
+      console.error('❌ Failed to load selected address from localStorage:', error)
     }
   }
 
@@ -354,20 +487,73 @@ export const useEmailStore = defineStore('email', () => {
 
   // 初始化函数 - 从本地存储加载数据
   function initializeStore() {
-    console.log('Initializing email store...')
+    console.log('🚀 Initializing email store...')
+
+    // 检查存储版本
+    const storedVersion = localStorage.getItem(STORAGE_KEYS.STORAGE_VERSION)
+    console.log('📊 Storage version check:', storedVersion || 'not set', 'current:', STORAGE_VERSION)
 
     // 首先从本地存储加载数据
     loadAddressesFromStorage()
+
+    // 如果没有地址，尝试从所有可能的存储键中恢复
+    if (addresses.value.length === 0) {
+      console.log('🔍 No addresses found, scanning localStorage for any email data...')
+
+      // 扫描所有localStorage键
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (!key) continue
+
+        // 查找可能包含邮箱地址的键
+        if (key.includes('email') || key.includes('address') || key.includes('mail')) {
+          try {
+            const data = localStorage.getItem(key)
+            if (!data) continue
+
+            const parsed = JSON.parse(data)
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].address) {
+              console.log(`🔄 Found potential address data in key "${key}"`)
+              addresses.value = parsed
+              saveAddressesToStorage()
+              break
+            }
+          } catch (e) {
+            // 忽略解析错误
+          }
+        }
+      }
+    }
+
+    // 加载选中的地址
     loadSelectedAddressFromStorage()
 
-    console.log('Email store initialized with', addresses.value.length, 'addresses from local storage')
+    console.log('✅ Email store initialized with', addresses.value.length, 'addresses from local storage')
 
     // 如果本地有数据，直接使用，不需要从后端加载
     if (addresses.value.length > 0) {
-      console.log('Using local addresses:', addresses.value.map(addr => addr.address))
+      console.log('📧 Using local addresses:', addresses.value.map(addr => addr.address))
+
+      // 确保存储版本是最新的
+      if (storedVersion !== STORAGE_VERSION) {
+        console.log('🔄 Updating storage to latest version')
+        saveAddressesToStorage()
+        if (selectedAddress.value) {
+          saveSelectedAddressToStorage()
+        }
+      }
     } else {
-      console.log('No local addresses found, will create new ones as needed')
+      console.log('ℹ️ No local addresses found, will create new ones as needed')
     }
+
+    // 设置自动保存
+    window.addEventListener('beforeunload', () => {
+      console.log('🔄 Auto-saving before page unload')
+      saveAddressesToStorage()
+      if (selectedAddress.value) {
+        saveSelectedAddressToStorage()
+      }
+    })
   }
 
   return {
@@ -413,12 +599,23 @@ export const useEmailStore = defineStore('email', () => {
     },
 
     debugStorage: () => {
-      console.log('=== Storage Debug Info ===')
-      console.log('Addresses in memory:', addresses.value.length)
-      console.log('Addresses:', addresses.value.map(addr => addr.address))
-      console.log('Selected address:', selectedAddress.value?.address)
-      console.log('LocalStorage addresses:', localStorage.getItem(STORAGE_KEYS.ADDRESSES))
-      console.log('LocalStorage selected:', localStorage.getItem(STORAGE_KEYS.SELECTED_ADDRESS))
+      console.log('=== 📊 Storage Debug Info ===')
+      console.log('🏠 Storage keys:', STORAGE_KEYS)
+      console.log('📧 Addresses in memory:', addresses.value.length)
+      console.log('📧 Addresses:', addresses.value.map(addr => addr.address))
+      console.log('🎯 Selected address:', selectedAddress.value?.address)
+      console.log('💾 LocalStorage addresses:', localStorage.getItem(STORAGE_KEYS.ADDRESSES))
+      console.log('💾 LocalStorage selected:', localStorage.getItem(STORAGE_KEYS.SELECTED_ADDRESS))
+      console.log('📊 Storage version:', localStorage.getItem(STORAGE_KEYS.STORAGE_VERSION))
+
+      // 扫描所有可能的邮箱相关存储
+      console.log('🔍 All localStorage keys containing "email", "address", or "mail":')
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.includes('email') || key.includes('address') || key.includes('mail'))) {
+          console.log(`  - ${key}: ${localStorage.getItem(key)?.substring(0, 100)}...`)
+        }
+      }
       console.log('========================')
     }
   }

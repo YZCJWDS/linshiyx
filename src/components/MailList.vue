@@ -314,14 +314,21 @@ function getDecodedSubject(mail: EmailMessage): string {
   let subject = mail.subject || ''
 
   // 如果主题为空，尝试从原始邮件中提取
-  if (!subject && mail.message) {
-    const subjectMatch = mail.message.match(/^Subject:\s*(.+)$/m)
-    if (subjectMatch) {
-      subject = subjectMatch[1].trim()
+  if (!subject) {
+    // 尝试从 raw 字段提取
+    const rawContent = mail.raw || mail.message || ''
+    if (rawContent) {
+      // 查找 Subject 行，支持多行折叠
+      const subjectMatch = rawContent.match(/^Subject:\s*(.+?)(?=\r?\n[^\s]|\r?\n\r?\n|$)/ms)
+      if (subjectMatch) {
+        subject = subjectMatch[1]
+          .replace(/\r?\n\s+/g, ' ') // 处理多行折叠
+          .trim()
+      }
     }
   }
 
-  if (!subject) return '(No Subject)'
+  if (!subject) return '(无主题)'
 
   // 解码 RFC 2047 编码的主题 (=?charset?encoding?encoded-text?=)
   try {

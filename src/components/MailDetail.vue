@@ -255,17 +255,29 @@ function getDecodedSubject(): string {
   console.log('Subject length:', subject.length)
 
   // 如果主题为空，尝试从原始邮件中提取
-  if (!subject && mail.message) {
+  if (!subject) {
     console.log('Trying to extract subject from raw message...')
-    const subjectMatch = mail.message.match(/^Subject:\s*(.+)$/m)
-    if (subjectMatch) {
-      subject = subjectMatch[1].trim()
-      console.log('Extracted subject from raw:', subject)
+
+    // 尝试从 raw 字段提取
+    const rawContent = mail.raw || mail.message || ''
+    if (rawContent) {
+      console.log('Raw content available, length:', rawContent.length)
+
+      // 查找 Subject 行，支持多行折叠
+      const subjectMatch = rawContent.match(/^Subject:\s*(.+?)(?=\r?\n[^\s]|\r?\n\r?\n|$)/ms)
+      if (subjectMatch) {
+        subject = subjectMatch[1]
+          .replace(/\r?\n\s+/g, ' ') // 处理多行折叠
+          .trim()
+        console.log('Extracted subject from raw:', subject)
+      } else {
+        console.log('No Subject line found in raw message')
+        // 尝试查找所有可能的主题行
+        const allSubjectMatches = rawContent.match(/Subject:[^\r\n]*/gi)
+        console.log('All Subject lines found:', allSubjectMatches)
+      }
     } else {
-      console.log('No Subject line found in raw message')
-      // 尝试查找所有可能的主题行
-      const allSubjectMatches = mail.message.match(/Subject:[^\r\n]*/gi)
-      console.log('All Subject lines found:', allSubjectMatches)
+      console.log('No raw content available')
     }
   }
 
