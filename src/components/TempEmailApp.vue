@@ -127,7 +127,12 @@ const message = useMessage()
 // 初始化应用时加载存储的数据
 onMounted(async () => {
   try {
+    // 首先初始化认证（可能会加载邮箱池）
+    await authStore.initAuth()
+
+    // 然后初始化邮箱存储（如果认证没有加载邮箱池）
     await emailStore.initializeStore()
+
     console.log('✅ App initialization completed')
   } catch (error) {
     console.error('❌ App initialization failed:', error)

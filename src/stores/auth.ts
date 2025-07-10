@@ -55,6 +55,17 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.setItem('admin_password', password)
             localStorage.setItem('auth_method', JSON.stringify(method))
 
+            // 认证成功后立即加载管理员邮箱池
+            console.log('🔐 Admin authenticated, loading email pool...')
+            try {
+              const { useEmailStore } = await import('./email')
+              const emailStore = useEmailStore()
+              await emailStore.loadAddressesFromBackend()
+              console.log('✅ Admin email pool loaded after authentication')
+            } catch (error) {
+              console.warn('⚠️ Failed to load email pool after auth:', error)
+            }
+
             return true
           }
         } catch (error) {
@@ -76,12 +87,23 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('admin_password')
   }
 
-  function initAuth() {
+  async function initAuth() {
     // Try to restore from localStorage
     const savedPassword = localStorage.getItem('admin_password')
     if (savedPassword) {
       adminPassword.value = savedPassword
       isAuthenticated.value = true
+
+      // 如果已经认证，加载管理员邮箱池
+      console.log('🔐 Restored admin auth, loading email pool...')
+      try {
+        const { useEmailStore } = await import('./email')
+        const emailStore = useEmailStore()
+        await emailStore.loadAddressesFromBackend()
+        console.log('✅ Admin email pool loaded after auth restoration')
+      } catch (error) {
+        console.warn('⚠️ Failed to load email pool after auth restoration:', error)
+      }
     }
   }
 
