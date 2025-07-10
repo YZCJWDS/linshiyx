@@ -21,6 +21,12 @@ export const useEmailStore = defineStore('email', () => {
     maxAddressCount: 5
   })
 
+  // 本地存储键名
+  const STORAGE_KEYS = {
+    ADDRESSES: 'temp_email_addresses',
+    SELECTED_ADDRESS: 'temp_email_selected_address'
+  }
+
   // Loading states
   const loading = ref({
     addresses: false,
@@ -29,6 +35,59 @@ export const useEmailStore = defineStore('email', () => {
     sending: false,
     deleting: false
   })
+
+  // 本地存储函数
+  function saveAddressesToStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(addresses.value))
+    } catch (error) {
+      console.error('Failed to save addresses to localStorage:', error)
+    }
+  }
+
+  function loadAddressesFromStorage() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.ADDRESSES)
+      if (stored) {
+        const parsedAddresses = JSON.parse(stored)
+        if (Array.isArray(parsedAddresses)) {
+          addresses.value = parsedAddresses
+          console.log('Loaded addresses from storage:', parsedAddresses.length)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load addresses from localStorage:', error)
+    }
+  }
+
+  function saveSelectedAddressToStorage() {
+    try {
+      if (selectedAddress.value) {
+        localStorage.setItem(STORAGE_KEYS.SELECTED_ADDRESS, JSON.stringify(selectedAddress.value))
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.SELECTED_ADDRESS)
+      }
+    } catch (error) {
+      console.error('Failed to save selected address to localStorage:', error)
+    }
+  }
+
+  function loadSelectedAddressFromStorage() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.SELECTED_ADDRESS)
+      if (stored) {
+        const parsedAddress = JSON.parse(stored)
+        // 确保这个地址还在地址列表中
+        const existingAddress = addresses.value.find(addr => addr.id === parsedAddress.id)
+        if (existingAddress) {
+          selectedAddress.value = existingAddress
+          console.log('Loaded selected address from storage:', existingAddress.address)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load selected address from localStorage:', error)
+    }
+  }
 
   // Computed
   const hasAddresses = computed(() => addresses.value.length > 0)
@@ -68,9 +127,13 @@ export const useEmailStore = defineStore('email', () => {
       // 将新地址添加到列表开头
       addresses.value.unshift(newAddress)
 
+      // 保存到本地存储
+      saveAddressesToStorage()
+
       // 如果这是第一个地址，自动选中它
       if (!selectedAddress.value) {
         selectedAddress.value = newAddress
+        saveSelectedAddressToStorage()
       }
 
       uiStore.showSuccess('邮箱地址创建成功')
@@ -107,15 +170,19 @@ export const useEmailStore = defineStore('email', () => {
     try {
       await addressApi.delete(id)
       addresses.value = addresses.value.filter(addr => addr.id !== id)
-      
+
+      // 保存到本地存储
+      saveAddressesToStorage()
+
       // Clear selection if deleted address was selected
       if (selectedAddress.value?.id === id) {
         selectedAddress.value = null
         mails.value = []
         selectedMail.value = null
+        saveSelectedAddressToStorage()
       }
-      
-      uiStore.showSuccess('Email address deleted successfully')
+
+      uiStore.showSuccess('邮箱地址删除成功')
     } catch (error) {
       uiStore.showError('Failed to delete email address')
       console.error('Delete address error:', error)
@@ -163,6 +230,7 @@ export const useEmailStore = defineStore('email', () => {
 
   async function loadMailsForAddress(address: EmailAddress) {
     selectedAddress.value = address
+    saveSelectedAddressToStorage()
     await loadMails(address.address)
   }
 
@@ -262,6 +330,13 @@ export const useEmailStore = defineStore('email', () => {
     }
   }
 
+  // 初始化函数 - 从本地存储加载数据
+  function initializeStore() {
+    loadAddressesFromStorage()
+    loadSelectedAddressFromStorage()
+    console.log('Email store initialized with', addresses.value.length, 'addresses')
+  }
+
   return {
     // State
     addresses,
@@ -270,12 +345,12 @@ export const useEmailStore = defineStore('email', () => {
     selectedMail,
     userSettings,
     loading,
-    
+
     // Computed
     hasAddresses,
     hasMails,
     selectedAddressMails,
-    
+
     // Actions
     loadAddresses,
     createAddress,
@@ -288,6 +363,11 @@ export const useEmailStore = defineStore('email', () => {
     selectMail,
     clearSelection,
     startAutoRefresh,
-    stopAutoRefresh
+    stopAutoRefresh,
+    initializeStore,
+
+    // Storage functions (for debugging)
+    saveAddressesToStorage,
+    loadAddressesFromStorage
   }
 })

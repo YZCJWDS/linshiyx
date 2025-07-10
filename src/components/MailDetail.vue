@@ -162,14 +162,14 @@
                 @click="viewMode = 'rendered'"
                 size="small"
               >
-                Rendered
+                正常视图
               </n-button>
               <n-button
                 :type="viewMode === 'source' ? 'primary' : 'default'"
                 @click="viewMode = 'source'"
                 size="small"
               >
-                Source
+                源码视图
               </n-button>
             </n-button-group>
           </div>
@@ -187,13 +187,21 @@
                 @load="handleIframeLoad"
               />
               <div v-else class="text-content">
-                {{ emailStore.selectedMail.message }}
+                <!-- 智能显示邮件内容 -->
+                <div v-if="getMailContent()">
+                  {{ getMailContent() }}
+                </div>
+                <div v-else class="no-content">
+                  <n-alert type="info" title="邮件内容为空">
+                    这封邮件没有文本内容。
+                  </n-alert>
+                </div>
               </div>
             </div>
 
             <!-- Source View -->
             <div v-else class="source-content">
-              <pre class="source-code">{{ emailStore.selectedMail.message }}</pre>
+              <pre class="source-code">{{ getMailContent() || '邮件内容为空' }}</pre>
             </div>
           </n-scrollbar>
         </div>
@@ -233,6 +241,19 @@ const message = useMessage()
 
 // Local state
 const viewMode = ref<'rendered' | 'source'>('rendered')
+
+// 智能获取邮件内容
+function getMailContent(): string {
+  const mail = emailStore.selectedMail
+  if (!mail) return ''
+
+  // 按优先级尝试不同的内容字段
+  return mail.message ||
+         mail.raw ||
+         mail.body ||
+         mail.content ||
+         ''
+}
 
 // Computed
 const hasAttachments = computed(() => {
@@ -592,6 +613,10 @@ function handleIframeLoad(event: Event) {
   color: var(--n-text-color);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
+}
+
+.no-content {
+  padding: 16px;
 }
 
 /* Responsive adjustments */

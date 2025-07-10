@@ -65,14 +65,23 @@
     <!-- Email List Section -->
     <div class="email-list-section">
       <div class="list-header">
-        <span class="list-title">Your Email Addresses</span>
+        <span class="list-title">
+          我的邮箱
+          <n-badge
+            v-if="emailStore.addresses.length > 0"
+            :value="emailStore.addresses.length"
+            :max="99"
+            type="info"
+            style="margin-left: 8px;"
+          />
+        </span>
         <n-button
           size="small"
           quaternary
           circle
           @click="emailStore.loadAddresses"
           :loading="loading.addresses"
-          title="Refresh"
+          title="刷新邮箱列表"
         >
           <template #icon>
             <n-icon>
@@ -84,15 +93,20 @@
 
       <div class="email-list">
         <n-scrollbar style="max-height: 400px;">
-          <n-empty 
+          <n-empty
             v-if="!emailStore.hasAddresses && !loading.addresses"
-            description="No email addresses yet"
+            description="还没有创建邮箱地址"
             size="small"
           >
             <template #icon>
               <n-icon size="48" color="#ccc">
                 <MailIcon />
               </n-icon>
+            </template>
+            <template #extra>
+              <n-text depth="3" style="font-size: 12px;">
+                点击上方"生成新邮箱"来创建您的第一个临时邮箱
+              </n-text>
             </template>
           </n-empty>
 
@@ -200,6 +214,8 @@ import {
   NEmpty,
   NSpin,
   NPopconfirm,
+  NBadge,
+  NText,
   useMessage,
   type FormInst,
   type FormRules
