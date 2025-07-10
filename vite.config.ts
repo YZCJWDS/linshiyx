@@ -10,23 +10,24 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  optimizeDeps: {
+    include: [
+      'naive-ui',
+      '@vicons/ionicons5',
+      'vueuc',
+      'vooks',
+      'date-fns',
+      'date-fns-tz'
+    ],
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
     minify: 'terser',
-    // 强制预打包图标库，确保构建时能正确处理
     rollupOptions: {
-      output: {
-        manualChunks: {
-          'icons': ['@vicons/ionicons5']
-        }
-      }
+      output: {}
     }
-  },
-  // 明确指定需要预构建的依赖
-  optimizeDeps: {
-    include: ['@vicons/ionicons5']
   },
   server: {
     port: 3000,
