@@ -249,41 +249,72 @@ function getDecodedSubject(): string {
 
   let subject = mail.subject || ''
 
+  // 调试信息
+  console.log('=== Subject Debug ===')
+  console.log('Original subject field:', mail.subject)
+  console.log('Subject length:', subject.length)
+
   // 如果主题为空，尝试从原始邮件中提取
   if (!subject && mail.message) {
+    console.log('Trying to extract subject from raw message...')
     const subjectMatch = mail.message.match(/^Subject:\s*(.+)$/m)
     if (subjectMatch) {
       subject = subjectMatch[1].trim()
+      console.log('Extracted subject from raw:', subject)
+    } else {
+      console.log('No Subject line found in raw message')
+      // 尝试查找所有可能的主题行
+      const allSubjectMatches = mail.message.match(/Subject:[^\r\n]*/gi)
+      console.log('All Subject lines found:', allSubjectMatches)
     }
   }
 
-  if (!subject) return '(No Subject)'
+  if (!subject) {
+    console.log('No subject found, returning default')
+    return '(无主题)'
+  }
+
+  console.log('Processing subject:', subject)
 
   // 解码 RFC 2047 编码的主题 (=?charset?encoding?encoded-text?=)
   try {
+    const originalSubject = subject
     subject = subject.replace(/=\?([^?]+)\?([BQ])\?([^?]+)\?=/gi, (match, charset, encoding, encodedText) => {
+      console.log('Decoding subject part:', { charset, encoding, encodedText })
       try {
         if (encoding.toUpperCase() === 'B') {
           // Base64 解码
           const decoded = atob(encodedText)
           // 转换为 UTF-8
-          return decodeURIComponent(escape(decoded))
+          const result = decodeURIComponent(escape(decoded))
+          console.log('Base64 decoded result:', result)
+          return result
         } else if (encoding.toUpperCase() === 'Q') {
           // Quoted-Printable 解码
-          return encodedText.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, (match, hex) => {
+          const result = encodedText.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, (match, hex) => {
             return String.fromCharCode(parseInt(hex, 16))
           })
+          console.log('Quoted-Printable decoded result:', result)
+          return result
         }
       } catch (error) {
         console.warn('Failed to decode subject part:', error)
       }
       return match
     })
+
+    if (originalSubject !== subject) {
+      console.log('Subject decoded from:', originalSubject, 'to:', subject)
+    }
   } catch (error) {
     console.warn('Failed to decode subject:', error)
   }
 
-  return subject || '(No Subject)'
+  const finalSubject = subject || '(无主题)'
+  console.log('Final subject:', finalSubject)
+  console.log('==================')
+
+  return finalSubject
 }
 
 // 解析邮件内容
