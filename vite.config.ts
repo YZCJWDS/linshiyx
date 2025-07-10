@@ -14,15 +14,8 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['vue', 'naive-ui', 'pinia'],
-          utils: ['@vueuse/core', 'vue-i18n']
-        }
-      }
-    }
+    minify: 'terser'
+    // 移除 rollupOptions，让 Vite 使用默认的智能分包
   },
   server: {
     port: 3000,
