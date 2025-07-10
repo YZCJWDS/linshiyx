@@ -125,8 +125,13 @@ const authStore = useAuthStore()
 const message = useMessage()
 
 // 初始化应用时加载存储的数据
-onMounted(() => {
-  emailStore.initializeStore()
+onMounted(async () => {
+  try {
+    await emailStore.initializeStore()
+    console.log('✅ App initialization completed')
+  } catch (error) {
+    console.error('❌ App initialization failed:', error)
+  }
 })
 
 const isDark = computed(() => uiStore.theme === 'dark')

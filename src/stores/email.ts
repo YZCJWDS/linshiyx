@@ -23,13 +23,13 @@ export const useEmailStore = defineStore('email', () => {
 
   // 本地存储键名 - 使用更独特的键名避免冲突
   const STORAGE_KEYS = {
-    ADDRESSES: 'linshiyx_user_addresses_v2',
-    SELECTED_ADDRESS: 'linshiyx_selected_address_v2',
+    ADDRESSES: 'linshiyx_admin_addresses_v3',
+    SELECTED_ADDRESS: 'linshiyx_admin_selected_v3',
     STORAGE_VERSION: 'linshiyx_storage_version'
   }
 
   // 存储版本，用于数据迁移
-  const STORAGE_VERSION = '2.0'
+  const STORAGE_VERSION = '3.0'
 
   // Loading states
   const loading = ref({
@@ -41,6 +41,45 @@ export const useEmailStore = defineStore('email', () => {
   })
 
   // 本地存储函数
+  // 使用现有的 addressApi 进行后端同步
+  async function saveAddressesToBackend() {
+    try {
+      console.log('☁️ Backend sync not needed - addresses are managed individually')
+      // 地址是通过 addressApi.create() 和 addressApi.delete() 单独管理的
+      // 不需要批量保存，因为每个操作都会直接调用后端 API
+      saveAddressesToStorage()
+    } catch (error) {
+      console.warn('⚠️ Failed to save to backend, using localStorage only:', error)
+      saveAddressesToStorage()
+    }
+  }
+
+  // 从后端加载地址列表
+  async function loadAddressesFromBackend(): Promise<boolean> {
+    try {
+      console.log('☁️ Loading addresses from backend using /admin/address...')
+
+      // 使用现有的 addressApi
+      const response = await addressApi.getAll(100, 0)
+
+      if (response.results && Array.isArray(response.results)) {
+        addresses.value = response.results
+        console.log('✅ Loaded', addresses.value.length, 'addresses from backend')
+        console.log('📧 Addresses:', addresses.value.map(addr => addr.address))
+
+        // 同时保存到本地作为备份
+        saveAddressesToStorage()
+        return true
+      } else {
+        console.log('ℹ️ No addresses found in backend')
+        return false
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to load from backend:', error)
+      return false
+    }
+  }
+
   function saveAddressesToStorage() {
     try {
       const addressesToSave = addresses.value
@@ -53,8 +92,7 @@ export const useEmailStore = defineStore('email', () => {
       localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(dataToSave))
       localStorage.setItem(STORAGE_KEYS.STORAGE_VERSION, STORAGE_VERSION)
 
-      console.log('✅ Saved', addressesToSave.length, 'addresses to localStorage:', addressesToSave.map(addr => addr.address))
-      console.log('📦 Storage key:', STORAGE_KEYS.ADDRESSES)
+      console.log('💾 Saved', addressesToSave.length, 'addresses to localStorage (backup)')
     } catch (error) {
       console.error('❌ Failed to save addresses to localStorage:', error)
     }
@@ -62,7 +100,8 @@ export const useEmailStore = defineStore('email', () => {
 
   function loadAddressesFromStorage() {
     try {
-      console.log('📂 Loading addresses from storage key:', STORAGE_KEYS.ADDRESSES)
+      console.log('📂 Loading admin addresses from storage')
+      console.log('📦 Storage key:', STORAGE_KEYS.ADDRESSES)
 
       // 尝试从新版本存储加载
       const stored = localStorage.getItem(STORAGE_KEYS.ADDRESSES)
@@ -71,41 +110,51 @@ export const useEmailStore = defineStore('email', () => {
 
         // 检查是否是新版本格式
         if (parsedData && parsedData.version && parsedData.addresses) {
-          console.log('✅ Found v2 storage format, version:', parsedData.version)
+          console.log('✅ Found v3 admin data, version:', parsedData.version)
           addresses.value = parsedData.addresses
-          console.log('📧 Loaded', addresses.value.length, 'addresses from storage')
+          console.log('📧 Loaded', addresses.value.length, 'admin addresses')
+          console.log('📧 Addresses:', addresses.value.map(addr => addr.address))
           return
         }
 
         // 兼容旧版本格式（直接数组）
         if (Array.isArray(parsedData)) {
-          console.log('⚠️ Found legacy storage format, migrating...')
+          console.log('⚠️ Found legacy array format, migrating...')
           addresses.value = parsedData
-          console.log('📧 Loaded', addresses.value.length, 'addresses from legacy storage')
-
-          // 迁移到新格式
           saveAddressesToStorage()
           return
         }
       }
 
       // 尝试从旧版本键名加载（兼容性）
-      const legacyKeys = ['temp_email_addresses', 'emailAddresses', 'addresses']
+      const legacyKeys = [
+        'linshiyx_user_addresses_v2', // v2 格式
+        'temp_email_addresses',
+        'emailAddresses',
+        'addresses'
+      ]
+
       for (const key of legacyKeys) {
         const legacyData = localStorage.getItem(key)
         if (legacyData) {
           try {
             const parsedLegacy = JSON.parse(legacyData)
-            if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
-              console.log(`⚠️ Found data in legacy key "${key}", migrating...`)
-              addresses.value = parsedLegacy
-              console.log('📧 Loaded', addresses.value.length, 'addresses from legacy key')
 
-              // 迁移到新格式
+            // 处理 v2 格式（带版本信息）
+            if (parsedLegacy && parsedLegacy.addresses && Array.isArray(parsedLegacy.addresses)) {
+              console.log(`⚠️ Found v2 data in key "${key}", migrating to v3...`)
+              addresses.value = parsedLegacy.addresses
               saveAddressesToStorage()
+              // 不删除旧数据，以防需要回滚
+              return
+            }
 
-              // 清理旧数据
-              localStorage.removeItem(key)
+            // 处理旧版本格式（直接数组）
+            if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0 && parsedLegacy[0].address) {
+              console.log(`⚠️ Found legacy data in key "${key}", migrating to v3...`)
+              addresses.value = parsedLegacy
+              saveAddressesToStorage()
+              // 不删除旧数据，以防需要回滚
               return
             }
           } catch (e) {
@@ -114,7 +163,7 @@ export const useEmailStore = defineStore('email', () => {
         }
       }
 
-      console.log('ℹ️ No stored addresses found')
+      console.log('ℹ️ No stored admin addresses found')
     } catch (error) {
       console.error('❌ Failed to load addresses from localStorage:', error)
     }
@@ -282,7 +331,7 @@ export const useEmailStore = defineStore('email', () => {
       // 将新地址添加到列表开头
       addresses.value.unshift(newAddress)
 
-      // 保存到本地存储
+      // 保存到本地存储（后端已经通过 addressApi.create 保存了）
       saveAddressesToStorage()
 
       // 如果这是第一个地址，自动选中它
@@ -326,7 +375,7 @@ export const useEmailStore = defineStore('email', () => {
       await addressApi.delete(id)
       addresses.value = addresses.value.filter(addr => addr.id !== id)
 
-      // 保存到本地存储
+      // 保存到本地存储（后端已经通过 addressApi.delete 删除了）
       saveAddressesToStorage()
 
       // Clear selection if deleted address was selected
@@ -485,56 +534,38 @@ export const useEmailStore = defineStore('email', () => {
     }
   }
 
-  // 初始化函数 - 从本地存储加载数据
-  function initializeStore() {
+  // 初始化函数 - 优先从后端加载管理员邮箱池
+  async function initializeStore() {
     console.log('🚀 Initializing email store...')
 
     // 检查存储版本
     const storedVersion = localStorage.getItem(STORAGE_KEYS.STORAGE_VERSION)
     console.log('📊 Storage version check:', storedVersion || 'not set', 'current:', STORAGE_VERSION)
 
-    // 首先从本地存储加载数据
-    loadAddressesFromStorage()
+    // 首先尝试从后端加载管理员邮箱池
+    console.log('☁️ Loading admin email pool from backend...')
+    const backendLoaded = await loadAddressesFromBackend()
 
-    // 如果没有地址，尝试从所有可能的存储键中恢复
-    if (addresses.value.length === 0) {
-      console.log('🔍 No addresses found, scanning localStorage for any email data...')
+    if (!backendLoaded) {
+      console.log('ℹ️ No backend data, trying local storage...')
+      // 从本地存储加载数据
+      loadAddressesFromStorage()
 
-      // 扫描所有localStorage键
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (!key) continue
-
-        // 查找可能包含邮箱地址的键
-        if (key.includes('email') || key.includes('address') || key.includes('mail')) {
-          try {
-            const data = localStorage.getItem(key)
-            if (!data) continue
-
-            const parsed = JSON.parse(data)
-            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].address) {
-              console.log(`🔄 Found potential address data in key "${key}"`)
-              addresses.value = parsed
-              saveAddressesToStorage()
-              break
-            }
-          } catch (e) {
-            // 忽略解析错误
-          }
-        }
+      // 如果本地有数据，同步到后端
+      if (addresses.value.length > 0) {
+        console.log('🔄 Syncing local data to backend...')
+        await saveAddressesToBackend()
       }
     }
 
     // 加载选中的地址
     loadSelectedAddressFromStorage()
 
-    console.log('✅ Email store initialized with', addresses.value.length, 'addresses from local storage')
+    console.log('✅ Email store initialized with', addresses.value.length, 'admin addresses')
 
-    // 如果本地有数据，直接使用，不需要从后端加载
     if (addresses.value.length > 0) {
-      console.log('📧 Using local addresses:', addresses.value.map(addr => addr.address))
+      console.log('📧 Available addresses:', addresses.value.map(addr => addr.address))
 
-      // 确保存储版本是最新的
       if (storedVersion !== STORAGE_VERSION) {
         console.log('🔄 Updating storage to latest version')
         saveAddressesToStorage()
@@ -543,17 +574,26 @@ export const useEmailStore = defineStore('email', () => {
         }
       }
     } else {
-      console.log('ℹ️ No local addresses found, will create new ones as needed')
+      console.log('ℹ️ No addresses found, will create new ones as needed')
     }
 
-    // 设置自动保存
+    // 设置自动保存和同步
     window.addEventListener('beforeunload', () => {
       console.log('🔄 Auto-saving before page unload')
-      saveAddressesToStorage()
+      saveAddressesToBackend().catch(() => {
+        // 如果后端失败，至少保存到本地
+        saveAddressesToStorage()
+      })
       if (selectedAddress.value) {
         saveSelectedAddressToStorage()
       }
     })
+
+    // 定期从后端同步地址列表（每5分钟）
+    setInterval(async () => {
+      console.log('🔄 Periodic sync from backend...')
+      await loadAddressesFromBackend()
+    }, 5 * 60 * 1000)
   }
 
   return {
@@ -588,6 +628,8 @@ export const useEmailStore = defineStore('email', () => {
     // Storage functions (for debugging)
     saveAddressesToStorage,
     loadAddressesFromStorage,
+    saveAddressesToBackend,
+    loadAddressesFromBackend,
 
     // Debug functions
     clearLocalStorage: () => {
@@ -595,7 +637,7 @@ export const useEmailStore = defineStore('email', () => {
       localStorage.removeItem(STORAGE_KEYS.SELECTED_ADDRESS)
       addresses.value = []
       selectedAddress.value = null
-      console.log('Local storage cleared')
+      console.log('Local storage cleared for admin')
     },
 
     debugStorage: () => {
