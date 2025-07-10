@@ -14,8 +14,19 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser'
-    // 移除 rollupOptions，让 Vite 使用默认的智能分包
+    minify: 'terser',
+    // 强制预打包图标库，确保构建时能正确处理
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'icons': ['@vicons/ionicons5']
+        }
+      }
+    }
+  },
+  // 明确指定需要预构建的依赖
+  optimizeDeps: {
+    include: ['@vicons/ionicons5']
   },
   server: {
     port: 3000,
