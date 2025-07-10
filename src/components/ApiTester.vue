@@ -133,63 +133,66 @@ async function testApiConnection() {
 async function testCreateEndpoint() {
   testing.value = true
   testResult.value = null
-  
+
   try {
     addLog('info', '开始测试创建邮箱端点...')
-    
+
     const baseUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'https://apimail.yzcjwds.xyz')
-    const endpoints = [
-      '/admin/new_address',
-      '/api/new_address', 
-      '/admin/address',
-      '/api/address',
-      '/admin/create_address',
-      '/api/create_address'
-    ]
-    
+    const endpoint = '/api/new_address'
+
     const testData = {
-      enablePrefix: true,
       name: 'test',
       domain: 'yzcjwds.xyz'
     }
-    
-    for (const endpoint of endpoints) {
-      try {
-        addLog('info', `测试端点: ${endpoint}`)
-        
-        const response = await fetch(`${baseUrl}${endpoint}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(testData)
-        })
-        
-        if (response.status === 405) {
-          addLog('warning', `${endpoint}: 方法不允许 (405)`)
-        } else if (response.status === 404) {
-          addLog('warning', `${endpoint}: 端点未找到 (404)`)
-        } else if (response.ok) {
-          addLog('success', `${endpoint}: 响应成功 (${response.status})`)
-          testResult.value = {
-            type: 'success',
-            title: '找到可用端点',
-            message: `端点 ${endpoint} 响应正常`
-          }
-          break
-        } else {
-          addLog('error', `${endpoint}: 错误 (${response.status})`)
+
+    try {
+      addLog('info', `测试端点: ${endpoint}`)
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testData)
+      })
+
+      if (response.status === 405) {
+        addLog('error', `${endpoint}: 方法不允许 (405)`)
+        testResult.value = {
+          type: 'error',
+          title: '端点不支持 POST 方法',
+          message: '后端可能需要更新以支持创建邮箱功能'
         }
-      } catch (error) {
-        addLog('error', `${endpoint}: ${error instanceof Error ? error.message : '请求失败'}`)
+      } else if (response.status === 404) {
+        addLog('error', `${endpoint}: 端点未找到 (404)`)
+        testResult.value = {
+          type: 'error',
+          title: '端点未找到',
+          message: '后端可能没有部署或配置错误'
+        }
+      } else if (response.ok) {
+        const data = await response.json()
+        addLog('success', `${endpoint}: 响应成功 (${response.status})`)
+        addLog('success', `返回数据: ${JSON.stringify(data)}`)
+        testResult.value = {
+          type: 'success',
+          title: '创建邮箱端点正常',
+          message: `成功创建邮箱: ${data.address || '未知地址'}`
+        }
+      } else {
+        addLog('error', `${endpoint}: 错误 (${response.status})`)
+        testResult.value = {
+          type: 'error',
+          title: '端点响应错误',
+          message: `HTTP ${response.status}: ${response.statusText}`
+        }
       }
-    }
-    
-    if (!testResult.value) {
+    } catch (error) {
+      addLog('error', `${endpoint}: ${error instanceof Error ? error.message : '请求失败'}`)
       testResult.value = {
         type: 'error',
-        title: '所有端点测试失败',
-        message: '没有找到可用的创建邮箱端点'
+        title: '网络请求失败',
+        message: error instanceof Error ? error.message : '未知网络错误'
       }
     }
   } catch (error) {

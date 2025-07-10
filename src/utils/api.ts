@@ -18,6 +18,11 @@ class ApiError extends Error {
   }
 }
 
+// 生成随机ID
+function generateRandomId(): string {
+  return Math.random().toString(36).substr(2, 9)
+}
+
 // Generic fetch wrapper with error handling
 async function apiFetch<T = any>(
   endpoint: string,
@@ -76,211 +81,103 @@ async function apiFetch<T = any>(
 export const addressApi = {
   // Create new temporary email address
   async create(data: CreateAddressRequest): Promise<EmailAddress> {
-    // 尝试多个可能的端点
-    const possibleEndpoints = [
-      '/admin/new_address',
-      '/api/new_address',
-      '/admin/address',
-      '/api/address',
-      '/admin/create_address',
-      '/api/create_address'
-    ]
+    console.log('Creating address with data:', data)
 
-    let lastError: Error | null = null
+    // 调用正确的后端 API 端点
+    const response = await apiFetch<{ address: string, jwt: string }>('/api/new_address', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: data.name,
+        domain: data.domain
+      }),
+    })
 
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying endpoint: ${endpoint}`)
-        return await apiFetch<EmailAddress>(endpoint, {
-          method: 'POST',
-          body: JSON.stringify(data),
-        })
-      } catch (error) {
-        console.log(`Failed endpoint ${endpoint}:`, error)
-        lastError = error as Error
-
-        // 如果不是 405 错误，可能是其他问题，继续尝试
-        if (error instanceof ApiError && error.status !== 405) {
-          continue
-        }
-      }
+    // 转换后端响应格式为前端期望的格式
+    const emailAddress: EmailAddress = {
+      id: generateRandomId(),
+      name: data.name,
+      address: response.address,
+      domain: data.domain,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      jwt: response.jwt
     }
 
-    // 如果所有端点都失败，抛出最后一个错误
-    throw lastError || new ApiError('All endpoints failed')
+    return emailAddress
   },
 
   // Get all addresses with pagination
   async getAll(limit = 20, offset = 0, query = ''): Promise<{ results: EmailAddress[], count: number }> {
-    const params = new URLSearchParams({
-      limit: limit.toString(),
-      offset: offset.toString(),
-    })
-    if (query) params.append('query', query)
-
-    // 尝试多个可能的端点
-    const possibleEndpoints = [
-      `/admin/address?${params}`,
-      `/api/address?${params}`,
-      `/admin/addresses?${params}`,
-      `/api/addresses?${params}`
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying endpoint: ${endpoint}`)
-        return await apiFetch<{ results: EmailAddress[], count: number }>(endpoint)
-      } catch (error) {
-        console.log(`Failed endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
-    }
-
-    // 如果所有端点都失败，返回空结果
-    console.warn('All address endpoints failed, returning empty results')
+    // 注意：根据您提供的API文档，后端没有获取所有地址的端点
+    // 这里返回空结果，因为每个地址都需要单独的JWT来访问
+    console.warn('Backend does not support listing all addresses - each address requires individual JWT')
     return { results: [], count: 0 }
   },
 
   // Delete address
   async delete(id: string): Promise<void> {
-    const possibleEndpoints = [
-      `/admin/address/${id}`,
-      `/api/address/${id}`,
-      `/admin/delete_address/${id}`,
-      `/api/delete_address/${id}`
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying delete endpoint: ${endpoint}`)
-        return await apiFetch<void>(endpoint, {
-          method: 'DELETE',
-        })
-      } catch (error) {
-        console.log(`Failed delete endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
-    }
-
-    throw lastError || new ApiError('All delete endpoints failed')
+    // 注意：根据您提供的API文档，后端没有删除地址的端点
+    // 临时邮箱通常是自动过期的，不需要手动删除
+    console.warn('Backend does not support deleting addresses - addresses expire automatically')
+    throw new ApiError('Delete operation not supported by backend')
   },
 }
 
 // Email Messages API
 export const mailApi = {
   // Get mails for specific address or all
-  async getAll(params: GetMailsRequest): Promise<{ results: EmailMessage[], count: number }> {
-    const searchParams = new URLSearchParams({
-      limit: params.limit.toString(),
-      offset: params.offset.toString(),
-    })
-
-    if (params.address) searchParams.append('address', params.address)
-    if (params.keyword) searchParams.append('keyword', params.keyword)
-
-    const possibleEndpoints = [
-      `/admin/mails?${searchParams}`,
-      `/api/mails?${searchParams}`,
-      `/admin/emails?${searchParams}`,
-      `/api/emails?${searchParams}`
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying mails endpoint: ${endpoint}`)
-        return await apiFetch<{ results: EmailMessage[], count: number }>(endpoint)
-      } catch (error) {
-        console.log(`Failed mails endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
+  async getAll(params: GetMailsRequest, jwt?: string): Promise<{ results: EmailMessage[], count: number }> {
+    if (!jwt) {
+      console.warn('No JWT provided for mail access')
+      return { results: [], count: 0 }
     }
 
-    // 如果所有端点都失败，返回空结果
-    console.warn('All mail endpoints failed, returning empty results')
-    return { results: [], count: 0 }
+    console.log('Getting mails with JWT:', jwt.substring(0, 10) + '...')
+
+    // 调用正确的后端 API 端点
+    const mails = await apiFetch<EmailMessage[]>('/api/mails', {
+      method: 'GET',
+      headers: {
+        'x-address-jwt': jwt
+      }
+    })
+
+    return {
+      results: Array.isArray(mails) ? mails : [],
+      count: Array.isArray(mails) ? mails.length : 0
+    }
   },
 
   // Get single mail by ID
-  async getById(id: string): Promise<EmailMessage> {
-    const possibleEndpoints = [
-      `/admin/mails/${id}`,
-      `/api/mails/${id}`,
-      `/admin/emails/${id}`,
-      `/api/emails/${id}`
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying mail detail endpoint: ${endpoint}`)
-        return await apiFetch<EmailMessage>(endpoint)
-      } catch (error) {
-        console.log(`Failed mail detail endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
+  async getById(id: string, jwt?: string): Promise<EmailMessage> {
+    if (!jwt) {
+      throw new ApiError('JWT required for mail access')
     }
 
-    throw lastError || new ApiError('All mail detail endpoints failed')
+    console.log(`Getting mail ${id} with JWT:`, jwt.substring(0, 10) + '...')
+
+    // 调用正确的后端 API 端点
+    return await apiFetch<EmailMessage>(`/api/mail/${id}`, {
+      method: 'GET',
+      headers: {
+        'x-address-jwt': jwt
+      }
+    })
   },
 
   // Delete mail
-  async delete(id: string): Promise<void> {
-    const possibleEndpoints = [
-      `/admin/mails/${id}`,
-      `/api/mails/${id}`,
-      `/admin/emails/${id}`,
-      `/api/emails/${id}`
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying delete mail endpoint: ${endpoint}`)
-        return await apiFetch<void>(endpoint, {
-          method: 'DELETE',
-        })
-      } catch (error) {
-        console.log(`Failed delete mail endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
-    }
-
-    throw lastError || new ApiError('All delete mail endpoints failed')
+  async delete(id: string, jwt?: string): Promise<void> {
+    // 注意：根据您提供的API文档，后端没有删除邮件的端点
+    console.warn('Backend does not support deleting individual mails')
+    throw new ApiError('Delete mail operation not supported by backend')
   },
 
   // Send mail
   async send(data: SendMailRequest): Promise<void> {
-    const possibleEndpoints = [
-      '/api/send_mail',
-      '/admin/send_mail',
-      '/api/send',
-      '/admin/send'
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying send mail endpoint: ${endpoint}`)
-        return await apiFetch<void>(endpoint, {
-          method: 'POST',
-          body: JSON.stringify(data),
-        })
-      } catch (error) {
-        console.log(`Failed send mail endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
-    }
-
-    throw lastError || new ApiError('All send mail endpoints failed')
+    // 注意：根据您提供的API文档，后端没有发送邮件的端点
+    // 这是一个临时邮箱服务，主要用于接收邮件
+    console.warn('Backend does not support sending mails - this is a receive-only service')
+    throw new ApiError('Send mail operation not supported by backend')
   },
 }
 
@@ -288,27 +185,9 @@ export const mailApi = {
 export const settingsApi = {
   // Get user settings
   async get(): Promise<UserSettings> {
-    const possibleEndpoints = [
-      '/admin/user_settings',
-      '/api/user_settings',
-      '/admin/settings',
-      '/api/settings'
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying settings endpoint: ${endpoint}`)
-        return await apiFetch<UserSettings>(endpoint)
-      } catch (error) {
-        console.log(`Failed settings endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
-    }
-
-    // 如果所有端点都失败，返回默认设置
-    console.warn('All settings endpoints failed, returning default settings')
+    // 注意：根据您提供的API文档，后端没有用户设置端点
+    // 返回默认设置
+    console.warn('Backend does not support user settings, returning default settings')
     return {
       enable: true,
       enableMailVerify: false,
@@ -322,29 +201,9 @@ export const settingsApi = {
 
   // Update user settings
   async update(settings: UserSettings): Promise<void> {
-    const possibleEndpoints = [
-      '/admin/user_settings',
-      '/api/user_settings',
-      '/admin/settings',
-      '/api/settings'
-    ]
-
-    let lastError: Error | null = null
-
-    for (const endpoint of possibleEndpoints) {
-      try {
-        console.log(`Trying update settings endpoint: ${endpoint}`)
-        return await apiFetch<void>(endpoint, {
-          method: 'POST',
-          body: JSON.stringify(settings),
-        })
-      } catch (error) {
-        console.log(`Failed update settings endpoint ${endpoint}:`, error)
-        lastError = error as Error
-      }
-    }
-
-    throw lastError || new ApiError('All update settings endpoints failed')
+    // 注意：根据您提供的API文档，后端没有更新设置的端点
+    console.warn('Backend does not support updating user settings')
+    throw new ApiError('Update settings operation not supported by backend')
   },
 }
 

@@ -113,12 +113,20 @@ export const useEmailStore = defineStore('email', () => {
   async function loadMails(address?: string, keyword?: string) {
     loading.value.mails = true
     try {
+      // 需要使用当前选中地址的 JWT
+      const jwt = selectedAddress.value?.jwt
+      if (!jwt) {
+        console.warn('No JWT available for loading mails')
+        mails.value = []
+        return
+      }
+
       const response = await mailApi.getAll({
         limit: 100,
         offset: 0,
         address,
         keyword
-      })
+      }, jwt)
       mails.value = response.results || []
     } catch (error) {
       uiStore.showError('加载邮件失败')
@@ -135,17 +143,23 @@ export const useEmailStore = defineStore('email', () => {
 
   async function deleteMail(id: string) {
     try {
-      await mailApi.delete(id)
+      const jwt = selectedAddress.value?.jwt
+      if (!jwt) {
+        uiStore.showError('无法删除邮件：缺少访问凭证')
+        return
+      }
+
+      await mailApi.delete(id, jwt)
       mails.value = mails.value.filter(mail => mail.id !== id)
-      
+
       // Clear selection if deleted mail was selected
       if (selectedMail.value?.id === id) {
         selectedMail.value = null
       }
-      
-      uiStore.showSuccess('Email deleted successfully')
+
+      uiStore.showSuccess('邮件删除成功')
     } catch (error) {
-      uiStore.showError('Failed to delete email')
+      uiStore.showError('删除邮件失败')
       console.error('Delete mail error:', error)
     }
   }
@@ -165,8 +179,20 @@ export const useEmailStore = defineStore('email', () => {
     loadMailsForAddress(address)
   }
 
-  function selectMail(mail: EmailMessage) {
+  async function selectMail(mail: EmailMessage) {
     selectedMail.value = mail
+
+    // 如果需要获取完整邮件内容，可以调用详情 API
+    try {
+      const jwt = selectedAddress.value?.jwt
+      if (jwt && mail.id) {
+        const fullMail = await mailApi.getById(mail.id, jwt)
+        selectedMail.value = fullMail
+      }
+    } catch (error) {
+      console.error('Failed to load mail details:', error)
+      // 即使获取详情失败，也保持基本的邮件信息
+    }
   }
 
   function clearSelection() {
