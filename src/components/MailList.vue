@@ -122,7 +122,7 @@
 
                 <!-- Mail Subject -->
                 <div class="mail-subject">
-                  {{ mail.subject || '(No Subject)' }}
+                  {{ getDecodedSubject(mail) }}
                 </div>
 
                 <!-- Mail Preview -->
@@ -307,6 +307,47 @@ function hasAttachments(mail: EmailMessage): boolean {
 function getAttachmentCount(mail: EmailMessage): string {
   if (!mail.attachments) return '0'
   return mail.attachments.length.toString()
+}
+
+// 解码邮件主题
+function getDecodedSubject(mail: EmailMessage): string {
+  let subject = mail.subject || ''
+
+  // 如果主题为空，尝试从原始邮件中提取
+  if (!subject && mail.message) {
+    const subjectMatch = mail.message.match(/^Subject:\s*(.+)$/m)
+    if (subjectMatch) {
+      subject = subjectMatch[1].trim()
+    }
+  }
+
+  if (!subject) return '(No Subject)'
+
+  // 解码 RFC 2047 编码的主题 (=?charset?encoding?encoded-text?=)
+  try {
+    subject = subject.replace(/=\?([^?]+)\?([BQ])\?([^?]+)\?=/gi, (match, charset, encoding, encodedText) => {
+      try {
+        if (encoding.toUpperCase() === 'B') {
+          // Base64 解码
+          const decoded = atob(encodedText)
+          // 转换为 UTF-8
+          return decodeURIComponent(escape(decoded))
+        } else if (encoding.toUpperCase() === 'Q') {
+          // Quoted-Printable 解码
+          return encodedText.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, (match, hex) => {
+            return String.fromCharCode(parseInt(hex, 16))
+          })
+        }
+      } catch (error) {
+        console.warn('Failed to decode subject part:', error)
+      }
+      return match
+    })
+  } catch (error) {
+    console.warn('Failed to decode subject:', error)
+  }
+
+  return subject || '(No Subject)'
 }
 
 // Watch for address changes to clear read status

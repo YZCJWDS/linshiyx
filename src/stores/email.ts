@@ -39,7 +39,9 @@ export const useEmailStore = defineStore('email', () => {
   // 本地存储函数
   function saveAddressesToStorage() {
     try {
-      localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(addresses.value))
+      const addressesToSave = addresses.value
+      localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(addressesToSave))
+      console.log('Saved', addressesToSave.length, 'addresses to localStorage:', addressesToSave.map(addr => addr.address))
     } catch (error) {
       console.error('Failed to save addresses to localStorage:', error)
     }
@@ -101,10 +103,30 @@ export const useEmailStore = defineStore('email', () => {
   async function loadAddresses() {
     loading.value.addresses = true
     try {
-      const response = await addressApi.getAll(100, 0)
-      addresses.value = response.results || []
+      // 首先从本地存储加载
+      loadAddressesFromStorage()
+
+      // 然后尝试从后端同步（可选，用于多设备同步）
+      try {
+        const response = await addressApi.getAll(100, 0)
+        if (response.results && response.results.length > 0) {
+          // 如果后端有数据，合并到本地（去重）
+          const backendAddresses = response.results
+          const existingIds = new Set(addresses.value.map(addr => addr.address))
+
+          for (const backendAddr of backendAddresses) {
+            if (!existingIds.has(backendAddr.address)) {
+              addresses.value.push(backendAddr)
+            }
+          }
+
+          // 保存合并后的结果
+          saveAddressesToStorage()
+        }
+      } catch (apiError) {
+        console.warn('Failed to sync with backend, using local storage only:', apiError)
+      }
     } catch (error) {
-      uiStore.showError('加载邮箱地址失败')
       console.error('Load addresses error:', error)
     } finally {
       loading.value.addresses = false
@@ -332,9 +354,20 @@ export const useEmailStore = defineStore('email', () => {
 
   // 初始化函数 - 从本地存储加载数据
   function initializeStore() {
+    console.log('Initializing email store...')
+
+    // 首先从本地存储加载数据
     loadAddressesFromStorage()
     loadSelectedAddressFromStorage()
-    console.log('Email store initialized with', addresses.value.length, 'addresses')
+
+    console.log('Email store initialized with', addresses.value.length, 'addresses from local storage')
+
+    // 如果本地有数据，直接使用，不需要从后端加载
+    if (addresses.value.length > 0) {
+      console.log('Using local addresses:', addresses.value.map(addr => addr.address))
+    } else {
+      console.log('No local addresses found, will create new ones as needed')
+    }
   }
 
   return {
@@ -368,6 +401,25 @@ export const useEmailStore = defineStore('email', () => {
 
     // Storage functions (for debugging)
     saveAddressesToStorage,
-    loadAddressesFromStorage
+    loadAddressesFromStorage,
+
+    // Debug functions
+    clearLocalStorage: () => {
+      localStorage.removeItem(STORAGE_KEYS.ADDRESSES)
+      localStorage.removeItem(STORAGE_KEYS.SELECTED_ADDRESS)
+      addresses.value = []
+      selectedAddress.value = null
+      console.log('Local storage cleared')
+    },
+
+    debugStorage: () => {
+      console.log('=== Storage Debug Info ===')
+      console.log('Addresses in memory:', addresses.value.length)
+      console.log('Addresses:', addresses.value.map(addr => addr.address))
+      console.log('Selected address:', selectedAddress.value?.address)
+      console.log('LocalStorage addresses:', localStorage.getItem(STORAGE_KEYS.ADDRESSES))
+      console.log('LocalStorage selected:', localStorage.getItem(STORAGE_KEYS.SELECTED_ADDRESS))
+      console.log('========================')
+    }
   }
 })

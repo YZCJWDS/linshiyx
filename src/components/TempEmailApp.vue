@@ -136,11 +136,13 @@ const isRefreshing = computed(() =>
 
 async function refreshAll() {
   try {
-    await Promise.all([
-      emailStore.loadAddresses(),
-      emailStore.selectedAddress ? emailStore.loadMails(emailStore.selectedAddress.address) : Promise.resolve()
-    ])
-    message.success('刷新成功')
+    // 只刷新邮件，不重新加载地址（避免清空本地存储的地址）
+    if (emailStore.selectedAddress) {
+      await emailStore.loadMails(emailStore.selectedAddress.address)
+      message.success('邮件刷新成功')
+    } else {
+      message.info('请先选择一个邮箱地址')
+    }
   } catch (error) {
     message.error('刷新失败')
   }
