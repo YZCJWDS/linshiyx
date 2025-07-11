@@ -165,10 +165,21 @@ export const addressApi = {
 
     // 保存 JWT 到本地存储
     if (response.jwt) {
+      console.log('✅ Received JWT from backend:', response.jwt.substring(0, 20) + '...')
       saveAuth('jwt', response.jwt)
       // 同时保存地址专用的JWT
       localStorage.setItem(`address_jwt_${response.address}`, response.jwt)
-      console.log('Saved address JWT for:', response.address)
+      console.log('✅ Saved global JWT to localStorage')
+      console.log('✅ Saved address JWT for:', response.address)
+
+      // 验证保存是否成功
+      const savedGlobalJwt = localStorage.getItem('jwt')
+      const savedAddressJwt = localStorage.getItem(`address_jwt_${response.address}`)
+      console.log('Verification - Global JWT saved:', savedGlobalJwt ? '***' : 'none')
+      console.log('Verification - Address JWT saved:', savedAddressJwt ? '***' : 'none')
+    } else {
+      console.error('❌ No JWT received from backend!')
+      console.log('Backend response:', response)
     }
 
     // 转换后端响应格式为前端期望的格式
@@ -283,13 +294,23 @@ export const mailApi = {
       if (params.address) {
         // 首先尝试地址专用JWT（如果存在）
         addressJwt = localStorage.getItem(`address_jwt_${params.address}`) || ''
+        console.log('Address specific JWT:', addressJwt ? '***' : 'none')
 
         // 如果没有地址专用JWT，使用全局JWT
         if (!addressJwt) {
-          addressJwt = authState.jwt || localStorage.getItem('jwt') || ''
+          const globalJwt = authState.jwt || localStorage.getItem('jwt') || ''
+          addressJwt = globalJwt
+          console.log('Global JWT from authState:', authState.jwt ? '***' : 'none')
+          console.log('Global JWT from localStorage:', localStorage.getItem('jwt') ? '***' : 'none')
         }
 
-        console.log('Using JWT for address:', params.address, addressJwt ? '***' : 'none')
+        console.log('Final JWT to use:', addressJwt ? '***' : 'none')
+
+        // 如果还是没有JWT，这是个严重问题
+        if (!addressJwt) {
+          console.error('❌ No JWT available! This will cause 401 error.')
+          console.log('Available localStorage keys:', Object.keys(localStorage))
+        }
       }
 
       // 管理员系统：使用管理员API获取所有邮件，然后前端过滤
