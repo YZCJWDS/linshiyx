@@ -86,11 +86,15 @@ async function apiFetch<T>(url: string, options: ExtendedAxiosRequestConfig = {}
   // 获取最新的认证信息
   getStoredAuth()
 
-  console.log('🔗 API Call:', url, 'with adminAuth:', authState.adminAuth ? '***' : 'none', 'addressJwt:', options.addressJwt ? '***' : 'none')
+  // 确定使用哪个JWT：优先使用传入的addressJwt，否则使用全局JWT
+  const jwtToUse = options.addressJwt || authState.jwt
+
+  console.log('🔗 API Call:', url, 'with adminAuth:', authState.adminAuth ? '***' : 'none', 'JWT:', jwtToUse ? '***' : 'none')
 
   authState.loading = true
 
   try {
+
     const config: AxiosRequestConfig = {
       url,
       method: options.method || 'GET',
@@ -101,8 +105,7 @@ async function apiFetch<T>(url: string, options: ExtendedAxiosRequestConfig = {}
         'x-user-access-token': authState.userAccessToken,
         'x-custom-auth': authState.customAuth,
         'x-admin-auth': authState.adminAuth,
-        'x-address-jwt': options.addressJwt || authState.jwt, // 添加地址专用JWT
-        'Authorization': `Bearer ${authState.jwt}`,
+        'Authorization': `Bearer ${jwtToUse}`, // 使用正确的JWT
         'Content-Type': 'application/json',
         ...options.headers
       },
