@@ -9,6 +9,12 @@ import type {
   UserSettings
 } from '@/types'
 
+// 扩展 AxiosRequestConfig 以支持自定义属性
+interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
+  addressJwt?: string
+  userJwt?: string
+}
+
 // API Base Configuration - 完全按照参考前端的配置
 const API_BASE_URL = 'https://apimail.yzcjwds.xyz'
 
@@ -76,11 +82,11 @@ function generateRandomId(): string {
 }
 
 // 通用请求函数 - 完全按照参考前端的实现
-async function apiFetch<T>(url: string, options: AxiosRequestConfig = {}): Promise<T> {
+async function apiFetch<T>(url: string, options: ExtendedAxiosRequestConfig = {}): Promise<T> {
   // 获取最新的认证信息
   getStoredAuth()
 
-  console.log('🔗 API Call:', url, 'with adminAuth:', authState.adminAuth ? '***' : 'none')
+  console.log('🔗 API Call:', url, 'with adminAuth:', authState.adminAuth ? '***' : 'none', 'addressJwt:', options.addressJwt ? '***' : 'none')
 
   authState.loading = true
 
@@ -95,6 +101,7 @@ async function apiFetch<T>(url: string, options: AxiosRequestConfig = {}): Promi
         'x-user-access-token': authState.userAccessToken,
         'x-custom-auth': authState.customAuth,
         'x-admin-auth': authState.adminAuth,
+        'x-address-jwt': options.addressJwt || authState.jwt, // 添加地址专用JWT
         'Authorization': `Bearer ${authState.jwt}`,
         'Content-Type': 'application/json',
         ...options.headers
@@ -268,8 +275,17 @@ export const mailApi = {
     try {
       console.log('Getting mails with params:', params)
 
-      // 完全按照参考前端的调用方式 - 使用 apiFetch
-      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`)
+      // 获取地址专用的JWT
+      let addressJwt = ''
+      if (params.address) {
+        addressJwt = localStorage.getItem(`address_jwt_${params.address}`) || ''
+        console.log('Using address JWT for:', params.address, addressJwt ? '***' : 'none')
+      }
+
+      // 完全按照参考前端的调用方式 - 使用 apiFetch 并传递地址JWT
+      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+        addressJwt // 传递地址专用JWT
+      })
 
       console.log('Got mails from backend:', response)
       return response
@@ -280,12 +296,21 @@ export const mailApi = {
   },
 
   // Get single mail by ID - 按照参考前端的格式
-  async getById(id: string): Promise<EmailMessage> {
+  async getById(id: string, address?: string): Promise<EmailMessage> {
     try {
       console.log(`Getting mail ${id}`)
 
+      // 获取地址专用的JWT
+      let addressJwt = ''
+      if (address) {
+        addressJwt = localStorage.getItem(`address_jwt_${address}`) || ''
+        console.log('Using address JWT for mail details:', address, addressJwt ? '***' : 'none')
+      }
+
       // 完全按照参考前端的调用方式
-      const mail = await apiFetch<EmailMessage>(`/api/mail/${id}`)
+      const mail = await apiFetch<EmailMessage>(`/api/mail/${id}`, {
+        addressJwt // 传递地址专用JWT
+      })
 
       console.log('Got mail details:', mail)
       return mail

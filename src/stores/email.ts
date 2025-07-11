@@ -503,8 +503,8 @@ export const useEmailStore = defineStore('email', () => {
       if (mail.id) {
         console.log('Loading full mail details for:', mail.id)
 
-        // 使用新的 API 调用方式，不需要 JWT 参数
-        const fullMail = await mailApi.getById(mail.id)
+        // 使用新的 API 调用方式，传递地址参数以获取正确的JWT
+        const fullMail = await mailApi.getById(mail.id, mail.address)
         selectedMail.value = fullMail
         console.log('Loaded full mail details:', fullMail)
       }
