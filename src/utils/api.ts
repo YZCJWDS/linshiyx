@@ -188,17 +188,31 @@ export const addressApi = {
 
       // 确保数据格式正确
       if (response.results && Array.isArray(response.results)) {
-        const formattedAddresses: EmailAddress[] = response.results.map(addr => ({
-          id: addr.id || generateRandomId(),
-          name: addr.name || '',
-          address: addr.address || addr.email || '', // 兼容不同的字段名
-          domain: addr.domain || '',
-          created_at: addr.created_at || new Date().toISOString(),
-          updated_at: addr.updated_at || new Date().toISOString(),
-          jwt: addr.jwt
-        }))
+        console.log('First address object from backend:', response.results[0])
+
+        const formattedAddresses: EmailAddress[] = response.results.map((addr, index) => {
+          console.log(`Address ${index}:`, addr)
+          console.log(`  - addr.address: "${addr.address}"`)
+          console.log(`  - addr.email: "${addr.email}"`)
+          console.log(`  - addr.name: "${addr.name}"`)
+          console.log(`  - addr.id: "${addr.id}"`)
+
+          const formatted = {
+            id: addr.id || generateRandomId(),
+            name: addr.name || '',
+            address: addr.address || addr.email || '', // 兼容不同的字段名
+            domain: addr.domain || '',
+            created_at: addr.created_at || new Date().toISOString(),
+            updated_at: addr.updated_at || new Date().toISOString(),
+            jwt: addr.jwt
+          }
+
+          console.log(`  - formatted.address: "${formatted.address}"`)
+          return formatted
+        })
 
         console.log('Formatted addresses:', formattedAddresses)
+        console.log('Address strings:', formattedAddresses.map(addr => addr.address))
         return { results: formattedAddresses, count: response.count || formattedAddresses.length }
       }
 

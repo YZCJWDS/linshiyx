@@ -59,16 +59,8 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.setItem('adminAuth', password)
             console.log('🔐 Admin auth saved for API calls')
 
-            // 认证成功后立即加载管理员邮箱池
-            console.log('🔐 Admin authenticated, loading email pool...')
-            try {
-              const { useEmailStore } = await import('./email')
-              const emailStore = useEmailStore()
-              await emailStore.loadAddressesFromBackend()
-              console.log('✅ Admin email pool loaded after authentication')
-            } catch (error) {
-              console.warn('⚠️ Failed to load email pool after auth:', error)
-            }
+            // 认证成功，但不强制加载后端数据，让用户界面自然刷新
+            console.log('🔐 Admin authenticated successfully')
 
             return true
           }
@@ -102,16 +94,8 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('adminAuth', savedPassword)
       console.log('🔐 Restored admin auth for API calls')
 
-      // 如果已经认证，加载管理员邮箱池
-      console.log('🔐 Restored admin auth, loading email pool...')
-      try {
-        const { useEmailStore } = await import('./email')
-        const emailStore = useEmailStore()
-        await emailStore.loadAddressesFromBackend()
-        console.log('✅ Admin email pool loaded after auth restoration')
-      } catch (error) {
-        console.warn('⚠️ Failed to load email pool after auth restoration:', error)
-      }
+      // 不在这里加载邮箱池，让 emailStore 的 initializeStore 处理
+      console.log('🔐 Admin auth restored, email store will handle data loading')
     }
   }
 

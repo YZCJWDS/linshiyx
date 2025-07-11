@@ -54,7 +54,7 @@ export const useEmailStore = defineStore('email', () => {
     }
   }
 
-  // 从后端加载地址列表
+  // 从后端加载地址列表（仅作为备份，不覆盖本地数据）
   async function loadAddressesFromBackend(): Promise<boolean> {
     try {
       console.log('☁️ Loading addresses from backend using /admin/address...')
@@ -63,13 +63,19 @@ export const useEmailStore = defineStore('email', () => {
       const response = await addressApi.getAll(100, 0)
 
       if (response.results && Array.isArray(response.results)) {
-        addresses.value = response.results
-        console.log('✅ Loaded', addresses.value.length, 'addresses from backend')
-        console.log('📧 Addresses:', addresses.value.map(addr => addr.address))
+        // 只有在本地没有数据时才使用后端数据
+        if (addresses.value.length === 0) {
+          addresses.value = response.results
+          console.log('✅ Loaded', addresses.value.length, 'addresses from backend')
+          console.log('📧 Addresses:', addresses.value.map(addr => addr.address))
 
-        // 同时保存到本地作为备份
-        saveAddressesToStorage()
-        return true
+          // 保存到本地
+          saveAddressesToStorage()
+          return true
+        } else {
+          console.log('ℹ️ Local data exists, skipping backend override')
+          return false
+        }
       } else {
         console.log('ℹ️ No addresses found in backend')
         return false
@@ -534,7 +540,7 @@ export const useEmailStore = defineStore('email', () => {
     }
   }
 
-  // 初始化函数 - 优先从后端加载管理员邮箱池
+  // 初始化函数 - 优先本地存储，后端作为备份同步
   async function initializeStore() {
     console.log('🚀 Initializing email store...')
 
@@ -542,26 +548,11 @@ export const useEmailStore = defineStore('email', () => {
     const storedVersion = localStorage.getItem(STORAGE_KEYS.STORAGE_VERSION)
     console.log('📊 Storage version check:', storedVersion || 'not set', 'current:', STORAGE_VERSION)
 
-    // 首先尝试从后端加载管理员邮箱池
-    console.log('☁️ Loading admin email pool from backend...')
-    const backendLoaded = await loadAddressesFromBackend()
-
-    if (!backendLoaded) {
-      console.log('ℹ️ No backend data, trying local storage...')
-      // 从本地存储加载数据
-      loadAddressesFromStorage()
-
-      // 如果本地有数据，同步到后端
-      if (addresses.value.length > 0) {
-        console.log('🔄 Syncing local data to backend...')
-        await saveAddressesToBackend()
-      }
-    }
-
-    // 加载选中的地址
+    // 首先从本地存储加载数据（确保基本功能正常）
+    loadAddressesFromStorage()
     loadSelectedAddressFromStorage()
 
-    console.log('✅ Email store initialized with', addresses.value.length, 'admin addresses')
+    console.log('✅ Email store initialized with', addresses.value.length, 'admin addresses from local storage')
 
     if (addresses.value.length > 0) {
       console.log('📧 Available addresses:', addresses.value.map(addr => addr.address))
@@ -574,25 +565,38 @@ export const useEmailStore = defineStore('email', () => {
         }
       }
     } else {
-      console.log('ℹ️ No addresses found, will create new ones as needed')
+      console.log('ℹ️ No local addresses found, trying backend...')
+
+      // 只有在本地没有数据时才从后端加载
+      try {
+        const backendLoaded = await loadAddressesFromBackend()
+        if (backendLoaded) {
+          console.log('✅ Loaded addresses from backend as fallback')
+        }
+      } catch (error) {
+        console.warn('⚠️ Backend loading failed, will create new addresses as needed:', error)
+      }
     }
 
-    // 设置自动保存和同步
+    // 设置自动保存
     window.addEventListener('beforeunload', () => {
       console.log('🔄 Auto-saving before page unload')
-      saveAddressesToBackend().catch(() => {
-        // 如果后端失败，至少保存到本地
-        saveAddressesToStorage()
-      })
+      saveAddressesToStorage()
       if (selectedAddress.value) {
         saveSelectedAddressToStorage()
       }
     })
 
-    // 定期从后端同步地址列表（每5分钟）
+    // 后台定期同步到后端（不影响主要功能）
     setInterval(async () => {
-      console.log('🔄 Periodic sync from backend...')
-      await loadAddressesFromBackend()
+      if (addresses.value.length > 0) {
+        console.log('🔄 Background sync to backend...')
+        try {
+          await saveAddressesToBackend()
+        } catch (error) {
+          console.warn('⚠️ Background sync failed:', error)
+        }
+      }
     }, 5 * 60 * 1000)
   }
 
