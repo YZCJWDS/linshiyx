@@ -179,10 +179,10 @@ export const addressApi = {
   // Get all addresses with pagination - 按照参考前端的方式
   async getAll(limit = 20, offset = 0, query = ''): Promise<{ results: EmailAddress[], count: number }> {
     try {
-      console.log('Getting addresses from backend using correct endpoint...')
+      console.log('Getting addresses from backend using admin endpoint...')
 
-      // 使用参考前端的正确端点
-      const response = await apiFetch<{ results: any[] }>(`/user_api/bind_address`)
+      // 管理员获取地址列表 - 使用管理员API
+      const response = await apiFetch<{ results: any[], count: number }>(`/admin/address?limit=${limit}&offset=${offset}${query ? `&query=${query}` : ''}`)
 
       console.log('Raw backend response:', response)
       console.log('Full response object:', JSON.stringify(response, null, 2))
@@ -250,7 +250,7 @@ export const addressApi = {
   // Delete address - 按照参考前端的方式
   async delete(id: string): Promise<void> {
     try {
-      await apiFetch<void>(`/admin/delete_address/${id}`, {
+      await apiFetch<void>(`/admin/address/${id}`, {
         method: 'DELETE'
       })
       console.log('Deleted address:', id)
@@ -280,8 +280,8 @@ export const mailApi = {
         }
       }
 
-      // 完全按照参考前端的调用方式
-      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/user_api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+      // 使用公共API获取邮件，需要地址JWT认证
+      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
         headers
       })
 
