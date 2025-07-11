@@ -320,11 +320,11 @@ export const mailApi = {
         }
       }
 
-      // 管理员系统：使用管理员API获取所有邮件，然后前端过滤
-      // 这样避免了用户API的认证问题
-      const apiUrl = `/api/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
+      // 管理员系统：尝试使用管理员专用的邮件API
+      // 基于示例前端有/admin/address，可能也有/admin/mails
+      const apiUrl = `/admin/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
 
-      console.log('Using admin API endpoint:', apiUrl)
+      console.log('Using admin mails API endpoint:', apiUrl)
 
       // 调用管理员API获取所有邮件
       const response = await apiFetch<{ results: EmailMessage[], count: number }>(apiUrl, {
