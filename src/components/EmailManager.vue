@@ -87,6 +87,14 @@
                     <MailIcon />
                   </n-icon>
                   <span class="address-text">{{ address.address }}</span>
+                  <!-- 新邮件红点提醒 -->
+                  <n-badge
+                    v-if="getUnreadCount(address) > 0"
+                    :value="getUnreadCount(address)"
+                    :max="99"
+                    type="error"
+                    class="unread-badge"
+                  />
                 </div>
                 <div class="email-meta">
                   <span class="email-name">{{ address.name }}</span>
@@ -328,6 +336,18 @@ async function handleRefreshMails() {
 
 
 
+// Get unread mail count for an address
+function getUnreadCount(address: EmailAddress): number {
+  // 如果当前选中的地址就是这个地址，返回0（因为用户正在查看）
+  if (emailStore.selectedAddress?.id === address.id) {
+    return 0
+  }
+
+  // 返回该地址的邮件数量（作为未读数量）
+  // 注意：这里使用 mail_count 字段，如果后端有专门的未读数量字段可以替换
+  return parseInt(address.mail_count?.toString() || '0')
+}
+
 // Format date for display
 function formatDate(dateString: string) {
   return formatRelativeTime(dateString)
@@ -430,6 +450,12 @@ function formatDate(dateString: string) {
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
+  position: relative;
+}
+
+.unread-badge {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .email-icon {
