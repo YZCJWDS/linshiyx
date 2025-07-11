@@ -179,41 +179,64 @@ export const addressApi = {
   // Get all addresses with pagination - 按照参考前端的方式
   async getAll(limit = 20, offset = 0, query = ''): Promise<{ results: EmailAddress[], count: number }> {
     try {
-      console.log('Getting addresses from backend...')
+      console.log('Getting addresses from backend using correct endpoint...')
 
-      // 尝试调用后端的地址列表 API
-      const response = await apiFetch<{ results: any[], count: number }>(`/admin/address?limit=${limit}&offset=${offset}${query ? `&query=${query}` : ''}`)
+      // 使用参考前端的正确端点
+      const response = await apiFetch<{ results: any[] }>(`/user_api/bind_address`)
 
       console.log('Raw backend response:', response)
+      console.log('Full response object:', JSON.stringify(response, null, 2))
 
       // 确保数据格式正确
       if (response.results && Array.isArray(response.results)) {
-        console.log('First address object from backend:', response.results[0])
+        console.log('First address object from backend:', JSON.stringify(response.results[0], null, 2))
 
         const formattedAddresses: EmailAddress[] = response.results.map((addr, index) => {
-          console.log(`Address ${index}:`, addr)
-          console.log(`  - addr.address: "${addr.address}"`)
-          console.log(`  - addr.email: "${addr.email}"`)
-          console.log(`  - addr.name: "${addr.name}"`)
-          console.log(`  - addr.id: "${addr.id}"`)
-
-          const formatted = {
-            id: addr.id || generateRandomId(),
-            name: addr.name || '',
-            address: addr.address || addr.email || '', // 兼容不同的字段名
-            domain: addr.domain || '',
-            created_at: addr.created_at || new Date().toISOString(),
-            updated_at: addr.updated_at || new Date().toISOString(),
-            jwt: addr.jwt
+          // 打印所有可能的字段
+          console.log(`Address ${index} - All fields:`, Object.keys(addr))
+          for (const [key, value] of Object.entries(addr)) {
+            console.log(`  ${key}: "${value}"`)
           }
 
-          console.log(`  - formatted.address: "${formatted.address}"`)
+          // 尝试所有可能的地址字段名
+          const possibleAddressFields = ['address', 'email', 'mail', 'addr', 'email_address', 'full_address']
+          let addressValue = ''
+
+          for (const field of possibleAddressFields) {
+            if (addr[field] && typeof addr[field] === 'string' && addr[field].includes('@')) {
+              addressValue = addr[field]
+              console.log(`  Found address in field "${field}": "${addressValue}"`)
+              break
+            }
+          }
+
+          // 如果还是找不到，尝试第一个包含@的字段
+          if (!addressValue) {
+            for (const [key, value] of Object.entries(addr)) {
+              if (typeof value === 'string' && value.includes('@')) {
+                addressValue = value
+                console.log(`  Found address in field "${key}": "${addressValue}"`)
+                break
+              }
+            }
+          }
+
+          const formatted = {
+            id: addr.id || addr._id || generateRandomId(),
+            name: addr.name || addr.prefix || '',
+            address: addressValue,
+            domain: addr.domain || addressValue.split('@')[1] || '',
+            created_at: addr.created_at || addr.createdAt || new Date().toISOString(),
+            updated_at: addr.updated_at || addr.updatedAt || new Date().toISOString(),
+            jwt: addr.jwt || addr.token
+          }
+
+          console.log(`  Final formatted address: "${formatted.address}"`)
           return formatted
         })
 
-        console.log('Formatted addresses:', formattedAddresses)
-        console.log('Address strings:', formattedAddresses.map(addr => addr.address))
-        return { results: formattedAddresses, count: response.count || formattedAddresses.length }
+        console.log('All formatted addresses:', formattedAddresses.map(addr => addr.address))
+        return { results: formattedAddresses, count: formattedAddresses.length }
       }
 
       return { results: [], count: 0 }
@@ -227,7 +250,7 @@ export const addressApi = {
   // Delete address - 按照参考前端的方式
   async delete(id: string): Promise<void> {
     try {
-      await apiFetch<void>(`/admin/address/${id}`, {
+      await apiFetch<void>(`/admin/delete_address/${id}`, {
         method: 'DELETE'
       })
       console.log('Deleted address:', id)
@@ -258,7 +281,7 @@ export const mailApi = {
       }
 
       // 完全按照参考前端的调用方式
-      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/user_api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
         headers
       })
 
