@@ -183,28 +183,6 @@ export const addressApi = {
     return emailAddress
   },
 
-  // Get JWT for existing address - 按照参考前端的方式
-  async getAddressJwt(address: string): Promise<string> {
-    try {
-      console.log('Getting JWT for address:', address)
-
-      // 按照参考前端的调用方式
-      const response = await apiFetch<{ jwt: string }>(`/user_api/bind_address_jwt/${address}`)
-
-      if (response.jwt) {
-        // 保存地址专用的JWT
-        localStorage.setItem(`address_jwt_${address}`, response.jwt)
-        console.log('Saved address JWT for:', address)
-        return response.jwt
-      } else {
-        throw new Error('JWT not found in response')
-      }
-    } catch (error) {
-      console.error('Failed to get address JWT:', error)
-      throw error
-    }
-  },
-
   // Get all addresses with pagination - 按照参考前端的方式
   async getAll(limit = 20, offset = 0, query = ''): Promise<{ results: EmailAddress[], count: number }> {
     try {
@@ -297,63 +275,27 @@ export const mailApi = {
     try {
       console.log('Getting mails with params:', params)
 
-      // 获取地址专用的JWT
+      // 对于管理员系统，直接使用全局JWT（更简单可靠）
       let addressJwt = ''
       if (params.address) {
+        // 首先尝试地址专用JWT（如果存在）
         addressJwt = localStorage.getItem(`address_jwt_${params.address}`) || ''
-        console.log('Using address JWT for:', params.address, addressJwt ? '***' : 'none')
 
-        // 如果没有地址专用JWT，尝试获取一个
+        // 如果没有地址专用JWT，使用全局JWT
         if (!addressJwt) {
-          try {
-            console.log('No JWT found for address, trying to get one...')
-            addressJwt = await addressApi.getAddressJwt(params.address)
-            console.log('Successfully got JWT for address:', params.address)
-          } catch (jwtError) {
-            console.warn('Failed to get address JWT, using fallback:', jwtError)
-            // 如果获取失败，尝试使用全局JWT作为fallback
-            addressJwt = authState.jwt || localStorage.getItem('jwt') || ''
-            console.log('Fallback to global JWT:', addressJwt ? '***' : 'none')
-          }
+          addressJwt = authState.jwt || localStorage.getItem('jwt') || ''
         }
+
+        console.log('Using JWT for address:', params.address, addressJwt ? '***' : 'none')
       }
 
-      // 第一次尝试API调用
-      try {
-        const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
-          addressJwt
-        })
+      // 调用API获取邮件
+      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+        addressJwt
+      })
 
-        console.log('Got mails from backend:', response)
-        return response
-      } catch (error: any) {
-        // 如果是401错误且有地址，尝试重新获取JWT并重试
-        if (error.status === 401 && params.address) {
-          console.log('🔄 401 error, trying to refresh address JWT and retry...')
-
-          try {
-            // 删除旧的JWT
-            localStorage.removeItem(`address_jwt_${params.address}`)
-
-            // 重新获取JWT
-            const newJwt = await addressApi.getAddressJwt(params.address)
-            console.log('✅ Got new JWT, retrying API call...')
-
-            // 重试API调用
-            const retryResponse = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
-              addressJwt: newJwt
-            })
-
-            console.log('✅ Retry successful, got mails from backend:', retryResponse)
-            return retryResponse
-          } catch (retryError) {
-            console.error('❌ Retry failed:', retryError)
-            throw error // 抛出原始错误
-          }
-        } else {
-          throw error
-        }
-      }
+      console.log('Got mails from backend:', response)
+      return response
     } catch (error) {
       console.error('Failed to get mails:', error)
       return { results: [], count: 0 }
@@ -365,63 +307,27 @@ export const mailApi = {
     try {
       console.log(`Getting mail ${id}`)
 
-      // 获取地址专用的JWT
+      // 对于管理员系统，直接使用全局JWT（更简单可靠）
       let addressJwt = ''
       if (address) {
+        // 首先尝试地址专用JWT（如果存在）
         addressJwt = localStorage.getItem(`address_jwt_${address}`) || ''
-        console.log('Using address JWT for mail details:', address, addressJwt ? '***' : 'none')
 
-        // 如果没有地址专用JWT，尝试获取一个
+        // 如果没有地址专用JWT，使用全局JWT
         if (!addressJwt) {
-          try {
-            console.log('No JWT found for mail details, trying to get one...')
-            addressJwt = await addressApi.getAddressJwt(address)
-            console.log('Successfully got JWT for mail details:', address)
-          } catch (jwtError) {
-            console.warn('Failed to get address JWT for mail details, using fallback:', jwtError)
-            // 如果获取失败，尝试使用全局JWT作为fallback
-            addressJwt = authState.jwt || localStorage.getItem('jwt') || ''
-            console.log('Fallback to global JWT for mail details:', addressJwt ? '***' : 'none')
-          }
+          addressJwt = authState.jwt || localStorage.getItem('jwt') || ''
         }
+
+        console.log('Using JWT for mail details:', address, addressJwt ? '***' : 'none')
       }
 
-      // 第一次尝试API调用
-      try {
-        const mail = await apiFetch<EmailMessage>(`/api/mail/${id}`, {
-          addressJwt
-        })
+      // 调用API获取邮件详情
+      const mail = await apiFetch<EmailMessage>(`/api/mail/${id}`, {
+        addressJwt
+      })
 
-        console.log('Got mail details:', mail)
-        return mail
-      } catch (error: any) {
-        // 如果是401错误且有地址，尝试重新获取JWT并重试
-        if (error.status === 401 && address) {
-          console.log('🔄 401 error for mail details, trying to refresh address JWT and retry...')
-
-          try {
-            // 删除旧的JWT
-            localStorage.removeItem(`address_jwt_${address}`)
-
-            // 重新获取JWT
-            const newJwt = await addressApi.getAddressJwt(address)
-            console.log('✅ Got new JWT for mail details, retrying API call...')
-
-            // 重试API调用
-            const retryMail = await apiFetch<EmailMessage>(`/api/mail/${id}`, {
-              addressJwt: newJwt
-            })
-
-            console.log('✅ Retry successful, got mail details:', retryMail)
-            return retryMail
-          } catch (retryError) {
-            console.error('❌ Retry failed for mail details:', retryError)
-            throw error // 抛出原始错误
-          }
-        } else {
-          throw error
-        }
-      }
+      console.log('Got mail details:', mail)
+      return mail
     } catch (error) {
       console.error('Failed to get mail details:', error)
       throw error
