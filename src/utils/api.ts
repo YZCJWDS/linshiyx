@@ -320,18 +320,19 @@ export const mailApi = {
         }
       }
 
-      // 管理员系统：尝试使用管理员专用的邮件API
-      // 基于示例前端有/admin/address，可能也有/admin/mails
-      const apiUrl = `/admin/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
+      // 完全按照示例前端的管理员API调用方式
+      // 示例前端：await ot.fetch(`/api/mails?limit=${C}&offset=${x}`)
+      // 注意：管理员API不带address参数，获取所有邮件然后前端过滤
+      const apiUrl = `/api/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
 
-      console.log('Using admin mails API endpoint:', apiUrl)
+      console.log('Using admin API (like reference frontend):', apiUrl)
 
-      // 调用管理员API获取所有邮件
+      // 调用管理员API获取所有邮件（完全按照示例前端）
       const response = await apiFetch<{ results: EmailMessage[], count: number }>(apiUrl, {
         addressJwt
       })
 
-      // 如果指定了地址，在前端过滤邮件
+      // 如果指定了地址，在前端过滤邮件（示例前端也是这样做的）
       if (params.address && response.results) {
         const filteredResults = response.results.filter(mail =>
           mail.address === params.address
