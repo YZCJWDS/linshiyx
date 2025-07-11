@@ -156,6 +156,9 @@ export const addressApi = {
     // 保存 JWT 到本地存储
     if (response.jwt) {
       saveAuth('jwt', response.jwt)
+      // 同时保存地址专用的JWT
+      localStorage.setItem(`address_jwt_${response.address}`, response.jwt)
+      console.log('Saved address JWT for:', response.address)
     }
 
     // 转换后端响应格式为前端期望的格式
@@ -176,9 +179,30 @@ export const addressApi = {
   // Get all addresses with pagination - 按照参考前端的方式
   async getAll(limit = 20, offset = 0, query = ''): Promise<{ results: EmailAddress[], count: number }> {
     try {
+      console.log('Getting addresses from backend...')
+
       // 尝试调用后端的地址列表 API
-      const response = await apiFetch<{ results: EmailAddress[], count: number }>(`/admin/address?limit=${limit}&offset=${offset}${query ? `&query=${query}` : ''}`)
-      return response
+      const response = await apiFetch<{ results: any[], count: number }>(`/admin/address?limit=${limit}&offset=${offset}${query ? `&query=${query}` : ''}`)
+
+      console.log('Raw backend response:', response)
+
+      // 确保数据格式正确
+      if (response.results && Array.isArray(response.results)) {
+        const formattedAddresses: EmailAddress[] = response.results.map(addr => ({
+          id: addr.id || generateRandomId(),
+          name: addr.name || '',
+          address: addr.address || addr.email || '', // 兼容不同的字段名
+          domain: addr.domain || '',
+          created_at: addr.created_at || new Date().toISOString(),
+          updated_at: addr.updated_at || new Date().toISOString(),
+          jwt: addr.jwt
+        }))
+
+        console.log('Formatted addresses:', formattedAddresses)
+        return { results: formattedAddresses, count: response.count || formattedAddresses.length }
+      }
+
+      return { results: [], count: 0 }
     } catch (error) {
       console.warn('Failed to get addresses from backend:', error)
       // 如果后端不支持，返回空结果
@@ -205,8 +229,24 @@ export const mailApi = {
   // Get mails for specific address or all - 按照参考前端的格式
   async getAll(params: GetMailsRequest): Promise<{ results: EmailMessage[], count: number }> {
     try {
+      console.log('Getting mails with params:', params)
+
+      // 构建请求头，包含地址JWT认证
+      const headers: any = {}
+
+      // 如果有指定地址，尝试获取该地址的JWT
+      if (params.address) {
+        const addressJwt = localStorage.getItem(`address_jwt_${params.address}`)
+        if (addressJwt) {
+          headers['x-address-jwt'] = addressJwt
+          console.log('Using address JWT for mail request')
+        }
+      }
+
       // 完全按照参考前端的调用方式
-      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`)
+      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+        headers
+      })
 
       console.log('Got mails from backend:', response)
       return response
