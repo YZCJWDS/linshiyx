@@ -349,29 +349,16 @@ export const mailApi = {
       }
 
       // 完全按照示例前端的管理员API调用方式
-      // 示例前端：await ot.fetch(`/api/mails?limit=${C}&offset=${x}`)
-      // 注意：管理员API不带address参数，获取所有邮件然后前端过滤
-      const apiUrl = `/api/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
+      // 示例前端管理员邮件组件：await $.fetch(`/admin/mails?limit=${r}&offset=${v}` + (i.value ? `&address=${i.value}` : "") + (s.value ? `&keyword=${s.value}` : ""))
+      // 管理员API支持address参数！
+      const apiUrl = `/admin/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`
 
-      console.log('Using admin API (like reference frontend):', apiUrl)
+      console.log('Using admin mails API (exactly like reference frontend):', apiUrl)
 
-      // 调用管理员API获取所有邮件（完全按照示例前端）
+      // 调用管理员API获取邮件（完全按照示例前端）
       const response = await apiFetch<{ results: EmailMessage[], count: number }>(apiUrl, {
         addressJwt
       })
-
-      // 如果指定了地址，在前端过滤邮件（示例前端也是这样做的）
-      if (params.address && response.results) {
-        const filteredResults = response.results.filter(mail =>
-          mail.address === params.address
-        )
-        console.log(`Filtered ${response.results.length} mails to ${filteredResults.length} for address:`, params.address)
-
-        return {
-          results: filteredResults,
-          count: filteredResults.length
-        }
-      }
 
       console.log('Got mails from backend:', response)
       return response
