@@ -1,5 +1,13 @@
 <template>
   <div class="admin-login">
+    <!-- 背景图片层 -->
+    <div class="background-layer">
+      <div class="bg-image bg-left"></div>
+      <div class="bg-image bg-right"></div>
+      <div class="bg-overlay"></div>
+    </div>
+
+    <!-- 登录内容层 -->
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
@@ -126,21 +134,92 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
   padding: 20px;
+}
+
+/* 背景图片层 */
+.background-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.bg-image {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(3px);
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  animation: float 6s ease-in-out infinite;
+}
+
+.bg-image:hover {
+  filter: blur(2px);
+  opacity: 0.8;
+}
+
+.bg-left {
+  left: 0;
+  background-image: url('/left.png');
+  background-position: right center;
+}
+
+.bg-right {
+  right: 0;
+  background-image: url('/right.png');
+  background-position: left center;
+}
+
+/* 渐变遮罩层 */
+.bg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.3) 0%,
+    rgba(118, 75, 162, 0.3) 50%,
+    rgba(102, 126, 234, 0.3) 100%
+  );
+  backdrop-filter: blur(1px);
 }
 
 .login-container {
   width: 100%;
   max-width: 400px;
+  position: relative;
+  z-index: 10;
 }
 
 .login-card {
-  background: var(--n-card-color);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
   padding: 40px 32px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
 }
 
 .login-header {
@@ -172,13 +251,27 @@ async function handleLogin() {
 }
 
 /* Dark mode adjustments */
-[data-theme="dark"] .admin-login {
-  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+[data-theme="dark"] .bg-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(45, 55, 72, 0.4) 0%,
+    rgba(74, 85, 104, 0.4) 50%,
+    rgba(45, 55, 72, 0.4) 100%
+  );
 }
 
 [data-theme="dark"] .login-card {
-  background: rgba(26, 32, 44, 0.8);
+  background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .login-card:hover {
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 /* Responsive */
@@ -194,5 +287,54 @@ async function handleLogin() {
   .login-title {
     font-size: 20px;
   }
+}
+
+/* 动画效果 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-card {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.bg-left {
+  animation-delay: -3s;
+}
+
+.bg-right {
+  animation-delay: 0s;
+}
+
+/* 添加一些粒子效果的伪元素 */
+.background-layer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+  animation: float 8s ease-in-out infinite reverse;
+  z-index: 2;
 }
 </style>
