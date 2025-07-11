@@ -59,6 +59,9 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.setItem('adminAuth', password)
             console.log('🔐 Admin auth saved for API calls')
 
+            // 清理旧的地址JWT，因为重新登录后可能需要重新获取
+            clearOldAddressJWTs()
+
             // 认证成功，但不强制加载后端数据，让用户界面自然刷新
             console.log('🔐 Admin authenticated successfully')
 
@@ -77,10 +80,37 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 清理旧的地址JWT
+  function clearOldAddressJWTs() {
+    console.log('🧹 Clearing old address JWTs after login...')
+    const keysToRemove: string[] = []
+
+    // 遍历localStorage找到所有地址JWT
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('address_jwt_')) {
+        keysToRemove.push(key)
+      }
+    }
+
+    // 删除所有旧的地址JWT
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+      console.log('🗑️ Removed old JWT:', key)
+    })
+
+    if (keysToRemove.length > 0) {
+      console.log(`✅ Cleared ${keysToRemove.length} old address JWTs`)
+    }
+  }
+
   function logout() {
     adminPassword.value = ''
     isAuthenticated.value = false
     localStorage.removeItem('admin_password')
+
+    // 登出时也清理地址JWT
+    clearOldAddressJWTs()
   }
 
   async function initAuth() {

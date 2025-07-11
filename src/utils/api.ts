@@ -318,13 +318,42 @@ export const mailApi = {
         }
       }
 
-      // 完全按照参考前端的调用方式 - 使用 apiFetch 并传递地址JWT
-      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
-        addressJwt // 传递地址专用JWT
-      })
+      // 第一次尝试API调用
+      try {
+        const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+          addressJwt
+        })
 
-      console.log('Got mails from backend:', response)
-      return response
+        console.log('Got mails from backend:', response)
+        return response
+      } catch (error: any) {
+        // 如果是401错误且有地址，尝试重新获取JWT并重试
+        if (error.status === 401 && params.address) {
+          console.log('🔄 401 error, trying to refresh address JWT and retry...')
+
+          try {
+            // 删除旧的JWT
+            localStorage.removeItem(`address_jwt_${params.address}`)
+
+            // 重新获取JWT
+            const newJwt = await addressApi.getAddressJwt(params.address)
+            console.log('✅ Got new JWT, retrying API call...')
+
+            // 重试API调用
+            const retryResponse = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+              addressJwt: newJwt
+            })
+
+            console.log('✅ Retry successful, got mails from backend:', retryResponse)
+            return retryResponse
+          } catch (retryError) {
+            console.error('❌ Retry failed:', retryError)
+            throw error // 抛出原始错误
+          }
+        } else {
+          throw error
+        }
+      }
     } catch (error) {
       console.error('Failed to get mails:', error)
       return { results: [], count: 0 }
@@ -357,13 +386,42 @@ export const mailApi = {
         }
       }
 
-      // 完全按照参考前端的调用方式
-      const mail = await apiFetch<EmailMessage>(`/api/mail/${id}`, {
-        addressJwt // 传递地址专用JWT
-      })
+      // 第一次尝试API调用
+      try {
+        const mail = await apiFetch<EmailMessage>(`/api/mail/${id}`, {
+          addressJwt
+        })
 
-      console.log('Got mail details:', mail)
-      return mail
+        console.log('Got mail details:', mail)
+        return mail
+      } catch (error: any) {
+        // 如果是401错误且有地址，尝试重新获取JWT并重试
+        if (error.status === 401 && address) {
+          console.log('🔄 401 error for mail details, trying to refresh address JWT and retry...')
+
+          try {
+            // 删除旧的JWT
+            localStorage.removeItem(`address_jwt_${address}`)
+
+            // 重新获取JWT
+            const newJwt = await addressApi.getAddressJwt(address)
+            console.log('✅ Got new JWT for mail details, retrying API call...')
+
+            // 重试API调用
+            const retryMail = await apiFetch<EmailMessage>(`/api/mail/${id}`, {
+              addressJwt: newJwt
+            })
+
+            console.log('✅ Retry successful, got mail details:', retryMail)
+            return retryMail
+          } catch (retryError) {
+            console.error('❌ Retry failed for mail details:', retryError)
+            throw error // 抛出原始错误
+          }
+        } else {
+          throw error
+        }
+      }
     } catch (error) {
       console.error('Failed to get mail details:', error)
       throw error
