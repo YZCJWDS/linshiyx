@@ -12,70 +12,24 @@ export const useAuthStore = defineStore('auth', () => {
   // Actions
   async function login(password: string): Promise<boolean> {
     try {
-      // 基于Cloudflare Workers常见认证方式
-      const authMethods = [
-        // Method 1: POST with password in body (最常见)
-        {
-          url: '/admin/user_settings',
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
-        },
-        // Method 2: Query parameter
-        { url: `/admin/user_settings?password=${encodeURIComponent(password)}`, headers: {} },
-        // Method 3: X-Password header (Cloudflare Workers常用)
-        { url: '/admin/user_settings', headers: { 'X-Password': password } },
-        // Method 4: Authorization header
-        { url: '/admin/user_settings', headers: { 'Authorization': password } },
-        // Method 5: Basic auth
-        { url: '/admin/user_settings', headers: { 'Authorization': `Basic ${btoa(`admin:${password}`)}` } }
-      ]
+      // 基于示例前端，直接设置adminAuth，不需要验证API
+      // 因为示例前端也是直接设置密码作为adminAuth
+      console.log('🔐 Setting admin auth directly (like reference frontend)')
 
-      for (const method of authMethods) {
-        try {
-          const fetchOptions: RequestInit = {
-            method: method.method || 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              ...method.headers
-            }
-          }
+      adminPassword.value = password
+      isAuthenticated.value = true
 
-          if (method.body) {
-            fetchOptions.body = method.body
-          }
+      // Save to localStorage for persistence
+      localStorage.setItem('admin_password', password)
+      localStorage.setItem('adminAuth', password)
 
-          const response = await fetch(method.url, fetchOptions)
+      // 清理旧的地址JWT，因为重新登录后可能需要重新获取
+      clearOldAddressJWTs()
 
-          if (response.ok) {
-            adminPassword.value = password
-            isAuthenticated.value = true
-
-            // Save to localStorage for persistence
-            localStorage.setItem('admin_password', password)
-            localStorage.setItem('auth_method', JSON.stringify(method))
-
-            // 保存管理员认证信息到 API 状态
-            localStorage.setItem('adminAuth', password)
-            console.log('🔐 Admin auth saved for API calls')
-
-            // 清理旧的地址JWT，因为重新登录后可能需要重新获取
-            clearOldAddressJWTs()
-
-            // 认证成功，但不强制加载后端数据，让用户界面自然刷新
-            console.log('🔐 Admin authenticated successfully')
-
-            return true
-          }
-        } catch (error) {
-          console.warn('Auth method failed:', method, error)
-          continue
-        }
-      }
-
-      return false
+      console.log('🔐 Admin authenticated successfully (direct method)')
+      return true
     } catch (error) {
-      console.error('Auth test failed:', error)
+      console.error('Auth setup failed:', error)
       return false
     }
   }
