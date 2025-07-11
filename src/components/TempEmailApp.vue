@@ -38,6 +38,20 @@
               </n-icon>
             </template>
           </n-button>
+
+          <n-button
+            quaternary
+            circle
+            @click="handleLogout"
+            title="退出登录"
+            type="error"
+          >
+            <template #icon>
+              <n-icon>
+                <LogOutIcon />
+              </n-icon>
+            </template>
+          </n-button>
         </div>
       </div>
     </header>
@@ -111,7 +125,8 @@ import {
   Mail as MailIcon,
   Sunny as SunIcon,
   Moon as MoonIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  LogOut as LogOutIcon
 } from '@vicons/ionicons5'
 import { useEmailStore, useUiStore, useAuthStore } from '@/stores'
 import { useKeyboard, commonShortcuts } from '@/composables/useKeyboard'
@@ -155,6 +170,22 @@ async function refreshAll() {
     }
   } catch (error) {
     message.error('刷新失败')
+  }
+}
+
+async function handleLogout() {
+  try {
+    // 调用认证store的logout方法
+    authStore.logout()
+
+    // 清理邮件store的数据
+    emailStore.clearAllData()
+
+    message.success('已退出登录')
+    console.log('🔓 User logged out successfully')
+  } catch (error) {
+    console.error('Logout error:', error)
+    message.error('退出登录失败')
   }
 }
 

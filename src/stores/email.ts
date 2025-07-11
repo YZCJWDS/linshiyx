@@ -644,6 +644,35 @@ export const useEmailStore = defineStore('email', () => {
       console.log('Local storage cleared for admin')
     },
 
+    // 清理所有数据（用于退出登录）
+    clearAllData: () => {
+      // 清理内存中的数据
+      addresses.value = []
+      selectedAddress.value = null
+      mails.value = []
+      selectedMail.value = null
+
+      // 清理本地存储
+      localStorage.removeItem(STORAGE_KEYS.ADDRESSES)
+      localStorage.removeItem(STORAGE_KEYS.SELECTED_ADDRESS)
+      localStorage.removeItem(STORAGE_KEYS.STORAGE_VERSION)
+
+      // 清理所有地址相关的JWT
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('address_jwt_')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+
+      // 停止自动刷新
+      stopAutoRefresh()
+
+      console.log('🧹 All email data cleared for logout')
+    },
+
     debugStorage: () => {
       console.log('=== 📊 Storage Debug Info ===')
       console.log('🏠 Storage keys:', STORAGE_KEYS)

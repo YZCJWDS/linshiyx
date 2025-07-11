@@ -107,10 +107,20 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     adminPassword.value = ''
     isAuthenticated.value = false
+
+    // 清理所有认证相关的localStorage
     localStorage.removeItem('admin_password')
+    localStorage.removeItem('auth_method')
+    localStorage.removeItem('adminAuth')
+    localStorage.removeItem('jwt')
+    localStorage.removeItem('userJwt')
+    localStorage.removeItem('auth')
+    localStorage.removeItem('userAccessToken')
 
     // 登出时也清理地址JWT
     clearOldAddressJWTs()
+
+    console.log('🔓 Admin logout completed, all auth data cleared')
   }
 
   async function initAuth() {
