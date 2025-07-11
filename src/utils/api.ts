@@ -268,46 +268,11 @@ export const mailApi = {
     try {
       console.log('Getting mails with params:', params)
 
-      // 构建请求头，包含地址JWT认证
-      const headers: any = {}
+      // 完全按照参考前端的调用方式 - 使用 apiFetch
+      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`)
 
-      // 如果有指定地址，尝试获取该地址的JWT
-      if (params.address) {
-        const addressJwt = localStorage.getItem(`address_jwt_${params.address}`)
-        console.log(`Looking for JWT for address: ${params.address}`)
-        console.log(`Found JWT: ${addressJwt ? 'YES' : 'NO'}`)
-
-        if (addressJwt) {
-          headers['x-address-jwt'] = addressJwt
-          console.log('Using address JWT for mail request:', addressJwt.substring(0, 20) + '...')
-        } else {
-          console.warn('No JWT found for address:', params.address)
-          // 尝试使用通用JWT
-          const generalJwt = localStorage.getItem('jwt')
-          if (generalJwt) {
-            headers['x-address-jwt'] = generalJwt
-            console.log('Using general JWT for mail request')
-          }
-        }
-      }
-
-      // 使用公共API获取邮件，需要地址JWT认证
-      // 对于邮件API，我们需要特殊处理，不使用管理员认证
-      const url = `/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`
-
-      console.log('Making mail request with headers:', headers)
-
-      // 直接调用axios，避免apiFetch添加管理员认证头
-      const axiosConfig: AxiosRequestConfig = {
-        method: 'GET',
-        url: url,
-        headers: headers
-      }
-
-      const response = await axios(axiosConfig)
-
-      console.log('Got mails from backend:', response.data)
-      return response.data
+      console.log('Got mails from backend:', response)
+      return response
     } catch (error) {
       console.error('Failed to get mails:', error)
       return { results: [], count: 0 }
