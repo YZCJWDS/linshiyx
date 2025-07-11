@@ -306,10 +306,17 @@ export const mailApi = {
 
         console.log('Final JWT to use:', addressJwt ? '***' : 'none')
 
-        // 如果还是没有JWT，这是个严重问题
+        // 如果还是没有JWT，尝试使用管理员认证作为fallback
         if (!addressJwt) {
-          console.error('❌ No JWT available! This will cause 401 error.')
+          console.error('❌ No JWT available! Trying adminAuth as fallback.')
           console.log('Available localStorage keys:', Object.keys(localStorage))
+
+          // 使用管理员密码作为JWT fallback
+          const adminAuth = authState.adminAuth || localStorage.getItem('adminAuth') || ''
+          if (adminAuth) {
+            addressJwt = adminAuth
+            console.log('🔄 Using adminAuth as JWT fallback:', addressJwt ? '***' : 'none')
+          }
         }
       }
 
