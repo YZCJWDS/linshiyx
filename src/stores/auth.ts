@@ -23,6 +23,32 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('admin_password', password)
       localStorage.setItem('adminAuth', password)
 
+      // 尝试获取JWT token（参考示例前端可能需要JWT）
+      try {
+        console.log('🔍 Trying to get JWT token for API calls...')
+        // 使用管理员认证尝试获取JWT
+        const response = await fetch('/api/settings', {
+          headers: {
+            'x-admin-auth': password,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.jwt) {
+            localStorage.setItem('jwt', data.jwt)
+            console.log('✅ Got JWT token from /api/settings')
+          } else {
+            console.log('ℹ️ No JWT in /api/settings response, will use adminAuth fallback')
+          }
+        } else {
+          console.log('ℹ️ /api/settings failed, will use adminAuth fallback')
+        }
+      } catch (error) {
+        console.log('ℹ️ Failed to get JWT, will use adminAuth fallback:', error)
+      }
+
       // 清理旧的地址JWT，因为重新登录后可能需要重新获取
       clearOldAddressJWTs()
 
