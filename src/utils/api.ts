@@ -306,16 +306,44 @@ export const mailApi = {
 
         console.log('Final JWT to use:', addressJwt ? '***' : 'none')
 
-        // 如果还是没有JWT，尝试使用管理员认证作为fallback
+        // 如果还是没有JWT，尝试为这个地址获取用户JWT
         if (!addressJwt) {
-          console.error('❌ No JWT available! Trying adminAuth as fallback.')
+          console.error('❌ No JWT available! Trying to get user JWT for address...')
           console.log('Available localStorage keys:', Object.keys(localStorage))
 
-          // 使用管理员密码作为JWT fallback
-          const adminAuth = authState.adminAuth || localStorage.getItem('adminAuth') || ''
-          if (adminAuth) {
-            addressJwt = adminAuth
-            console.log('🔄 Using adminAuth as JWT fallback:', addressJwt ? '***' : 'none')
+          try {
+            // 使用管理员认证获取这个地址的用户JWT
+            console.log('🔍 Getting user JWT for address:', params.address)
+            const response = await fetch(`/user_api/bind_address_jwt/${params.address}`, {
+              headers: {
+                'x-admin-auth': authState.adminAuth || localStorage.getItem('adminAuth') || '',
+                'Content-Type': 'application/json'
+              }
+            })
+
+            if (response.ok) {
+              const data = await response.json()
+              if (data.jwt) {
+                addressJwt = data.jwt
+                localStorage.setItem(`address_jwt_${params.address}`, data.jwt)
+                console.log('✅ Got user JWT for address:', params.address)
+              } else {
+                console.error('❌ No JWT in bind_address_jwt response')
+              }
+            } else {
+              console.error('❌ bind_address_jwt failed:', response.status)
+            }
+          } catch (error) {
+            console.error('❌ Failed to get user JWT for address:', error)
+          }
+
+          // 如果还是没有JWT，使用管理员认证作为最后的fallback
+          if (!addressJwt) {
+            const adminAuth = authState.adminAuth || localStorage.getItem('adminAuth') || ''
+            if (adminAuth) {
+              addressJwt = adminAuth
+              console.log('🔄 Using adminAuth as final fallback:', addressJwt ? '***' : 'none')
+            }
           }
         }
       }
