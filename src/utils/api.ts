@@ -289,22 +289,29 @@ export const mailApi = {
         console.log('Using JWT for address:', params.address, addressJwt ? '***' : 'none')
       }
 
-      // 根据示例前端，使用正确的API端点
-      let apiUrl = ''
-      if (params.address) {
-        // 如果指定了地址，使用用户API（按照示例前端的方式）
-        apiUrl = `/user_api/mails?limit=${params.limit}&offset=${params.offset}&address=${params.address}${params.keyword ? `&keyword=${params.keyword}` : ''}`
-      } else {
-        // 如果没有指定地址，使用管理员API获取所有邮件
-        apiUrl = `/api/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
-      }
+      // 管理员系统：使用管理员API获取所有邮件，然后前端过滤
+      // 这样避免了用户API的认证问题
+      const apiUrl = `/api/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
 
-      console.log('Using API endpoint:', apiUrl)
+      console.log('Using admin API endpoint:', apiUrl)
 
-      // 调用API获取邮件
+      // 调用管理员API获取所有邮件
       const response = await apiFetch<{ results: EmailMessage[], count: number }>(apiUrl, {
         addressJwt
       })
+
+      // 如果指定了地址，在前端过滤邮件
+      if (params.address && response.results) {
+        const filteredResults = response.results.filter(mail =>
+          mail.address === params.address
+        )
+        console.log(`Filtered ${response.results.length} mails to ${filteredResults.length} for address:`, params.address)
+
+        return {
+          results: filteredResults,
+          count: filteredResults.length
+        }
+      }
 
       console.log('Got mails from backend:', response)
       return response
