@@ -183,6 +183,28 @@ export const addressApi = {
     return emailAddress
   },
 
+  // Get JWT for existing address - 按照参考前端的方式
+  async getAddressJwt(address: string): Promise<string> {
+    try {
+      console.log('Getting JWT for address:', address)
+
+      // 按照参考前端的调用方式
+      const response = await apiFetch<{ jwt: string }>(`/user_api/bind_address_jwt/${address}`)
+
+      if (response.jwt) {
+        // 保存地址专用的JWT
+        localStorage.setItem(`address_jwt_${address}`, response.jwt)
+        console.log('Saved address JWT for:', address)
+        return response.jwt
+      } else {
+        throw new Error('JWT not found in response')
+      }
+    } catch (error) {
+      console.error('Failed to get address JWT:', error)
+      throw error
+    }
+  },
+
   // Get all addresses with pagination - 按照参考前端的方式
   async getAll(limit = 20, offset = 0, query = ''): Promise<{ results: EmailAddress[], count: number }> {
     try {
@@ -280,6 +302,20 @@ export const mailApi = {
       if (params.address) {
         addressJwt = localStorage.getItem(`address_jwt_${params.address}`) || ''
         console.log('Using address JWT for:', params.address, addressJwt ? '***' : 'none')
+
+        // 如果没有地址专用JWT，尝试获取一个
+        if (!addressJwt) {
+          try {
+            console.log('No JWT found for address, trying to get one...')
+            addressJwt = await addressApi.getAddressJwt(params.address)
+            console.log('Successfully got JWT for address:', params.address)
+          } catch (jwtError) {
+            console.warn('Failed to get address JWT, using fallback:', jwtError)
+            // 如果获取失败，尝试使用全局JWT作为fallback
+            addressJwt = authState.jwt || localStorage.getItem('jwt') || ''
+            console.log('Fallback to global JWT:', addressJwt ? '***' : 'none')
+          }
+        }
       }
 
       // 完全按照参考前端的调用方式 - 使用 apiFetch 并传递地址JWT
@@ -305,6 +341,20 @@ export const mailApi = {
       if (address) {
         addressJwt = localStorage.getItem(`address_jwt_${address}`) || ''
         console.log('Using address JWT for mail details:', address, addressJwt ? '***' : 'none')
+
+        // 如果没有地址专用JWT，尝试获取一个
+        if (!addressJwt) {
+          try {
+            console.log('No JWT found for mail details, trying to get one...')
+            addressJwt = await addressApi.getAddressJwt(address)
+            console.log('Successfully got JWT for mail details:', address)
+          } catch (jwtError) {
+            console.warn('Failed to get address JWT for mail details, using fallback:', jwtError)
+            // 如果获取失败，尝试使用全局JWT作为fallback
+            addressJwt = authState.jwt || localStorage.getItem('jwt') || ''
+            console.log('Fallback to global JWT for mail details:', addressJwt ? '***' : 'none')
+          }
+        }
       }
 
       // 完全按照参考前端的调用方式
