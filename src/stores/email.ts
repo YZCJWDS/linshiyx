@@ -510,8 +510,9 @@ export const useEmailStore = defineStore('email', () => {
       }
     } catch (error) {
       console.error('Failed to load mail details:', error)
-      // 即使获取详情失败，也保持基本的邮件信息
-      uiStore.showError('加载邮件详情失败')
+      // 静默处理错误，不显示错误提示，因为基本邮件信息已经可用
+      // 用户可以看到邮件列表中的基本信息，详情加载失败不影响主要功能
+      console.log('Using basic mail info from list, detail loading failed but not critical')
     }
   }
 

@@ -280,16 +280,16 @@ onUnmounted(() => {
 .app-main {
   flex: 1;
   overflow: hidden;
-  padding: 16px;
-  max-width: 1400px;
+  padding: 12px 8px;
+  max-width: 1600px;
   margin: 0 auto;
   width: 100%;
 }
 
 .three-column-layout {
   display: grid;
-  grid-template-columns: 320px 400px 1fr;
-  gap: 16px;
+  grid-template-columns: 280px 350px 1fr;
+  gap: 12px;
   height: 100%;
   min-height: 0;
 }
@@ -360,10 +360,10 @@ onUnmounted(() => {
 /* Responsive Design */
 @media (max-width: 1200px) {
   .three-column-layout {
-    grid-template-columns: 280px 350px 1fr;
-    gap: 12px;
+    grid-template-columns: 260px 320px 1fr;
+    gap: 10px;
   }
-  
+
   .app-main {
     padding: 12px;
   }
@@ -371,7 +371,7 @@ onUnmounted(() => {
 
 @media (max-width: 1024px) {
   .three-column-layout {
-    grid-template-columns: 250px 300px 1fr;
+    grid-template-columns: 240px 280px 1fr;
     gap: 8px;
   }
 
@@ -394,7 +394,7 @@ onUnmounted(() => {
   }
 
   .three-column-layout {
-    grid-template-columns: 200px 250px 1fr;
+    grid-template-columns: 180px 220px 1fr;
     gap: 6px;
   }
 
