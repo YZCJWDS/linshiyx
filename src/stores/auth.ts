@@ -55,6 +55,10 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.setItem('admin_password', password)
             localStorage.setItem('auth_method', JSON.stringify(method))
 
+            // 保存管理员认证信息到 API 状态
+            localStorage.setItem('adminAuth', password)
+            console.log('🔐 Admin auth saved for API calls')
+
             // 认证成功后立即加载管理员邮箱池
             console.log('🔐 Admin authenticated, loading email pool...')
             try {
@@ -93,6 +97,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (savedPassword) {
       adminPassword.value = savedPassword
       isAuthenticated.value = true
+
+      // 确保 API 认证状态也被设置
+      localStorage.setItem('adminAuth', savedPassword)
+      console.log('🔐 Restored admin auth for API calls')
 
       // 如果已经认证，加载管理员邮箱池
       console.log('🔐 Restored admin auth, loading email pool...')

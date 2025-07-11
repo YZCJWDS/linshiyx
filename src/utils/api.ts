@@ -77,6 +77,11 @@ function generateRandomId(): string {
 
 // 通用请求函数 - 完全按照参考前端的实现
 async function apiFetch<T>(url: string, options: AxiosRequestConfig = {}): Promise<T> {
+  // 获取最新的认证信息
+  getStoredAuth()
+
+  console.log('🔗 API Call:', url, 'with adminAuth:', authState.adminAuth ? '***' : 'none')
+
   authState.loading = true
 
   try {
