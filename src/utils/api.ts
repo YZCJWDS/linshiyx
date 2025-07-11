@@ -289,8 +289,20 @@ export const mailApi = {
         console.log('Using JWT for address:', params.address, addressJwt ? '***' : 'none')
       }
 
+      // 根据示例前端，使用正确的API端点
+      let apiUrl = ''
+      if (params.address) {
+        // 如果指定了地址，使用用户API（按照示例前端的方式）
+        apiUrl = `/user_api/mails?limit=${params.limit}&offset=${params.offset}&address=${params.address}${params.keyword ? `&keyword=${params.keyword}` : ''}`
+      } else {
+        // 如果没有指定地址，使用管理员API获取所有邮件
+        apiUrl = `/api/mails?limit=${params.limit}&offset=${params.offset}${params.keyword ? `&keyword=${params.keyword}` : ''}`
+      }
+
+      console.log('Using API endpoint:', apiUrl)
+
       // 调用API获取邮件
-      const response = await apiFetch<{ results: EmailMessage[], count: number }>(`/api/mails?limit=${params.limit}&offset=${params.offset}${params.address ? `&address=${params.address}` : ''}${params.keyword ? `&keyword=${params.keyword}` : ''}`, {
+      const response = await apiFetch<{ results: EmailMessage[], count: number }>(apiUrl, {
         addressJwt
       })
 
