@@ -116,12 +116,27 @@ async function handleLogin() {
     if (success) {
       message.success('登录成功')
     } else {
-      message.error('密码错误或认证方式不匹配，请检查密码')
+      message.error('登录失败，请检查密码')
       form.password = ''
     }
   } catch (error) {
     console.error('Login error:', error)
-    message.error('登录失败，请重试')
+
+    // 根据错误类型显示不同的错误信息
+    if (error instanceof Error) {
+      if (error.message.includes('管理员密码错误')) {
+        message.error('管理员密码错误，请重新输入')
+      } else if (error.message.includes('验证失败')) {
+        message.error('服务器验证失败，请稍后重试')
+      } else {
+        message.error(error.message || '登录失败，请重试')
+      }
+    } else {
+      message.error('登录失败，请重试')
+    }
+
+    // 清空密码输入框
+    form.password = ''
   } finally {
     loading.value = false
   }

@@ -12,10 +12,32 @@ export const useAuthStore = defineStore('auth', () => {
   // Actions
   async function login(password: string): Promise<boolean> {
     try {
-      // 基于示例前端，直接设置adminAuth，不需要验证API
-      // 因为示例前端也是直接设置密码作为adminAuth
-      console.log('🔐 Setting admin auth directly (like reference frontend)')
+      // 通过调用需要管理员权限的API来验证密码
+      // 使用 /admin/address 来验证，因为我们知道这个API存在且需要管理员权限
+      console.log('🔐 Verifying admin password with backend...')
 
+      const response = await fetch('/admin/address?limit=1&offset=0', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-auth': password  // 使用密码作为认证头进行验证
+        }
+      })
+
+      if (!response.ok) {
+        console.error('❌ Admin password verification failed:', response.status)
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('管理员密码错误')
+        } else {
+          throw new Error('验证失败，请稍后重试')
+        }
+      }
+
+      // 如果能成功获取地址列表，说明密码正确
+      const data = await response.json()
+      console.log('✅ Admin password verified successfully')
+
+      // 验证成功后设置认证状态
       adminPassword.value = password
       isAuthenticated.value = true
 
@@ -23,40 +45,24 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('admin_password', password)
       localStorage.setItem('adminAuth', password)
 
-      // 尝试获取JWT token（参考示例前端可能需要JWT）
-      try {
-        console.log('🔍 Trying to get JWT token for API calls...')
-        // 使用管理员认证尝试获取JWT
-        const response = await fetch('/api/settings', {
-          headers: {
-            'x-admin-auth': password,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          if (data.jwt) {
-            localStorage.setItem('jwt', data.jwt)
-            console.log('✅ Got JWT token from /api/settings')
-          } else {
-            console.log('ℹ️ No JWT in /api/settings response, will use adminAuth fallback')
-          }
-        } else {
-          console.log('ℹ️ /api/settings failed, will use adminAuth fallback')
-        }
-      } catch (error) {
-        console.log('ℹ️ Failed to get JWT, will use adminAuth fallback:', error)
-      }
+      // 地址API不返回JWT，但验证成功说明密码正确
+      console.log('✅ Password verification successful, admin access granted')
 
       // 清理旧的地址JWT，因为重新登录后可能需要重新获取
       clearOldAddressJWTs()
 
-      console.log('🔐 Admin authenticated successfully (direct method)')
+      console.log('🔐 Admin authenticated successfully')
       return true
     } catch (error) {
       console.error('Auth setup failed:', error)
-      return false
+      // 清理可能的错误状态
+      adminPassword.value = ''
+      isAuthenticated.value = false
+      localStorage.removeItem('admin_password')
+      localStorage.removeItem('adminAuth')
+      localStorage.removeItem('jwt')
+
+      throw error // 重新抛出错误，让UI层处理
     }
   }
 
