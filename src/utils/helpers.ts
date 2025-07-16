@@ -27,71 +27,80 @@ export function formatDate(dateString: string, useUTC = false): string {
   }).format(date)
 }
 
-// Format relative time (e.g., "2 minutes ago")
-export function formatRelativeTime(dateString: string): string {
+// Format relative time (e.g., "2 minutes ago") - 参考示例前端的方法
+export function formatRelativeTime(dateString: string, useUTCDate = false): string {
   if (!dateString) return 'Unknown time'
 
   try {
-    // 尝试多种日期格式解析
-    let date: Date
+    // 参考示例前端的处理方法：在时间字符串后添加 " UTC"
+    const utcTimeString = `${dateString} UTC`
 
-    // 如果是ISO格式或包含T的格式，直接解析
-    if (dateString.includes('T') || dateString.includes('Z')) {
-      date = new Date(dateString)
-    } else {
-      // 如果是其他格式，尝试添加时区信息
-      date = new Date(dateString + (dateString.includes('+') ? '' : 'Z'))
+    // 如果设置使用UTC时间，直接返回UTC时间字符串
+    if (useUTCDate) {
+      return utcTimeString
     }
+
+    // 创建Date对象，会自动转换为本地时间
+    const date = new Date(utcTimeString)
 
     // 检查日期是否有效
     if (isNaN(date.getTime())) {
       console.warn('Invalid date string:', dateString)
+      // 尝试直接解析原始字符串
+      const fallbackDate = new Date(dateString)
+      if (!isNaN(fallbackDate.getTime())) {
+        return formatTimeAgo(fallbackDate)
+      }
       return dateString // 返回原始字符串
     }
 
-    const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-    // 调试信息
-    console.log(`Time debug - Original: ${dateString}, Parsed: ${date.toISOString()}, Now: ${now.toISOString()}, Diff: ${diffInSeconds}s`)
-
-    // 如果时间差为负数（未来时间），可能是时区问题
-    if (diffInSeconds < 0) {
-      const absDiff = Math.abs(diffInSeconds)
-      if (absDiff < 3600 * 12) { // 如果差异小于12小时，可能是时区问题
-        console.warn('Future time detected, possible timezone issue')
-        return 'Just now'
-      }
-    }
-
-    const absDiffInSeconds = Math.abs(diffInSeconds)
-
-    if (absDiffInSeconds < 60) {
-      return 'Just now'
-    }
-
-    const diffInMinutes = Math.floor(absDiffInSeconds / 60)
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`
-    }
-
-    const diffInHours = Math.floor(diffInMinutes / 60)
-    if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
-    }
-
-    const diffInDays = Math.floor(diffInHours / 24)
-    if (diffInDays < 30) {
-      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
-    }
-
-    // 超过30天，显示具体日期
-    return date.toLocaleDateString()
+    return formatTimeAgo(date)
 
   } catch (error) {
     console.error('Error parsing date:', dateString, error)
     return dateString
   }
+}
+
+// 计算相对时间的辅助函数
+function formatTimeAgo(date: Date): string {
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  // 调试信息（可以在生产环境中移除）
+  console.log(`Time debug - Parsed: ${date.toISOString()}, Now: ${now.toISOString()}, Diff: ${diffInSeconds}s`)
+
+  // 处理未来时间（可能的时区问题）
+  if (diffInSeconds < 0) {
+    const absDiff = Math.abs(diffInSeconds)
+    if (absDiff < 3600) { // 如果差异小于1小时，可能是时区问题
+      return 'Just now'
+    }
+  }
+
+  const absDiffInSeconds = Math.abs(diffInSeconds)
+
+  if (absDiffInSeconds < 60) {
+    return 'Just now'
+  }
+
+  const diffInMinutes = Math.floor(absDiffInSeconds / 60)
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 30) {
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
+  }
+
+  // 超过30天，显示具体日期
+  return date.toLocaleDateString()
 }
 
 // Validate email address

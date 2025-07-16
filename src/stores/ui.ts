@@ -8,6 +8,7 @@ export const useUiStore = defineStore('ui', () => {
   const loading = ref(false)
   const sidebarCollapsed = ref(false)
   const theme = ref<'light' | 'dark'>('light')
+  const useUTCDate = ref(false) // 是否使用UTC时间显示
 
   // Notification actions
   function showNotification(notification: NotificationMessage) {
@@ -108,13 +109,27 @@ export const useUiStore = defineStore('ui', () => {
     localStorage.setItem('theme', theme.value)
   }
 
+  // UTC时间设置
+  function setUseUTCDate(value: boolean) {
+    useUTCDate.value = value
+    localStorage.setItem('useUTCDate', JSON.stringify(value))
+  }
+
+  function initUTCDateSetting() {
+    const saved = localStorage.getItem('useUTCDate')
+    if (saved) {
+      useUTCDate.value = JSON.parse(saved)
+    }
+  }
+
   return {
     // State
     notifications,
     loading,
     sidebarCollapsed,
     theme,
-    
+    useUTCDate,
+
     // Actions
     showNotification,
     showSuccess,
@@ -129,6 +144,8 @@ export const useUiStore = defineStore('ui', () => {
     setTheme,
     toggleTheme,
     initTheme,
-    saveTheme
+    saveTheme,
+    setUseUTCDate,
+    initUTCDateSetting
   }
 })

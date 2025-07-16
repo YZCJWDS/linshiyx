@@ -186,6 +186,10 @@ onMounted(async () => {
   try {
     // 检查背景图片
     checkBackgroundImage()
+
+    // 初始化UI设置
+    uiStore.initUTCDateSetting()
+
     // 首先初始化认证（可能会加载邮箱池）
     await authStore.initAuth()
 

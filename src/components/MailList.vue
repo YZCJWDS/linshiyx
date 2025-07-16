@@ -212,7 +212,7 @@ import {
   Attach as AttachIcon,
   Trash as DeleteIcon
 } from '@vicons/ionicons5'
-import { useEmailStore } from '@/stores'
+import { useEmailStore, useUiStore } from '@/stores'
 import { 
   formatRelativeTime, 
   truncateText, 
@@ -223,6 +223,7 @@ import {
 import type { EmailMessage } from '@/types'
 
 const emailStore = useEmailStore()
+const uiStore = useUiStore()
 const message = useMessage()
 
 // Local state
@@ -288,7 +289,7 @@ function handleSearch() {
 }
 
 function formatDate(dateString: string) {
-  return formatRelativeTime(dateString)
+  return formatRelativeTime(dateString, uiStore.useUTCDate)
 }
 
 function getMailPreview(mail: EmailMessage): string {

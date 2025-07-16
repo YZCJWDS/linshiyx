@@ -242,11 +242,12 @@ import {
   Trash as DeleteIcon,
   Dice as DiceIcon
 } from '@vicons/ionicons5'
-import { useEmailStore } from '@/stores'
+import { useEmailStore, useUiStore } from '@/stores'
 import { generateRandomString, formatRelativeTime, copyToClipboard, COMMON_DOMAINS } from '@/utils/helpers'
 import type { EmailAddress } from '@/types'
 
 const emailStore = useEmailStore()
+const uiStore = useUiStore()
 const message = useMessage()
 
 // Modal state
@@ -344,7 +345,7 @@ function getUnreadCount(address: EmailAddress): number {
 
 // Format date for display
 function formatDate(dateString: string) {
-  return formatRelativeTime(dateString)
+  return formatRelativeTime(dateString, uiStore.useUTCDate)
 }
 </script>
 
