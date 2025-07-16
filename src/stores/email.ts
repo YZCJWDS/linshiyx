@@ -414,7 +414,42 @@ export const useEmailStore = defineStore('email', () => {
         keyword
       })
 
-      mails.value = response.results || []
+      // 按照示例前端的方式解析邮件数据
+      const processedMails = (response.results || []).map((mail: EmailMessage) => {
+        try {
+          if (mail.raw) {
+            console.log('Parsing raw data for mail:', mail.id)
+            const rawData = JSON.parse(mail.raw)
+
+            // 按照示例前端的解析逻辑
+            if (rawData.version === "v2") {
+              mail.to_mail = rawData.to_name ? `${rawData.to_name} <${rawData.to_mail}>` : rawData.to_mail
+              mail.subject = rawData.subject
+              mail.is_html = rawData.is_html
+              mail.content = rawData.content
+              mail.raw = JSON.stringify(rawData, null, 2)
+            } else {
+              // v1 格式处理
+              mail.subject = rawData.subject
+              mail.is_html = rawData.content?.[0]?.type !== "text/plain"
+              mail.content = rawData.content?.[0]?.value
+              mail.raw = JSON.stringify(rawData, null, 2)
+            }
+
+            console.log('Processed mail:', {
+              id: mail.id,
+              subject: mail.subject,
+              is_html: mail.is_html,
+              content_length: mail.content?.length || 0
+            })
+          }
+        } catch (error) {
+          console.warn('Failed to parse raw data for mail:', mail.id, error)
+        }
+        return mail
+      })
+
+      mails.value = processedMails
       console.log('Loaded mails:', mails.value.length)
     } catch (error) {
       console.error('Load mails error:', error)
@@ -494,26 +529,15 @@ export const useEmailStore = defineStore('email', () => {
     loadMailsForAddress(address)
   }
 
-  async function selectMail(mail: EmailMessage) {
+  function selectMail(mail: EmailMessage) {
+    // 完全按照示例前端的方式：直接设置选中邮件，不额外获取详情
     selectedMail.value = mail
-    console.log('Selected mail:', mail)
-
-    // 获取完整邮件内容
-    try {
-      if (mail.id) {
-        console.log('Loading full mail details for:', mail.id)
-
-        // 使用新的 API 调用方式，传递地址参数以获取正确的JWT
-        const fullMail = await mailApi.getById(mail.id, mail.address)
-        selectedMail.value = fullMail
-        console.log('Loaded full mail details:', fullMail)
-      }
-    } catch (error) {
-      console.error('Failed to load mail details:', error)
-      // 静默处理错误，不显示错误提示，因为基本邮件信息已经可用
-      // 用户可以看到邮件列表中的基本信息，详情加载失败不影响主要功能
-      console.log('Using basic mail info from list, detail loading failed but not critical')
-    }
+    console.log('Selected mail (reference frontend style):', mail)
+    console.log('Mail fields available:', Object.keys(mail))
+    console.log('Mail message field:', mail.message?.substring(0, 200) + '...')
+    console.log('Mail content field:', mail.content?.substring(0, 200) + '...')
+    console.log('Mail text field:', mail.text?.substring(0, 200) + '...')
+    console.log('Mail is_html field:', mail.is_html)
   }
 
   function clearSelection() {

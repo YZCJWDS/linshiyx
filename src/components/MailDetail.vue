@@ -519,50 +519,51 @@ const sanitizedHtmlContent = computed(() => {
   return styles + html
 })
 
-// 获取显示文本 - 按照示例前端的逻辑
+// 获取显示文本 - 完全按照示例前端的逻辑
 function getDisplayText(): string {
   const mail = emailStore.selectedMail
   if (!mail) return '没有选中邮件'
 
   console.log('Getting display text for mail:', mail)
 
-  // 优先使用 text 字段（示例前端使用 S.value.text）
+  // 示例前端使用 S.value.text，但如果没有text字段，从content提取
   if (mail.text) {
-    console.log('Using mail.text:', mail.text)
+    console.log('Using mail.text:', mail.text.substring(0, 100) + '...')
     return mail.text
   }
 
-  // 如果没有 text 字段，从 message 中提取文本
-  if (mail.message) {
-    console.log('Extracting text from mail.message')
-    return extractTextFromHtml(mail.message)
+  // 示例前端主要使用 content 字段
+  if (mail.content) {
+    console.log('Extracting text from mail.content')
+    return extractTextFromHtml(mail.content)
   }
 
   // 最后尝试其他字段
-  const content = mail.content || mail.body || mail.raw || ''
-  console.log('Using fallback content:', content.substring(0, 100) + '...')
-  return content
+  const fallback = mail.message || mail.body || mail.raw || '邮件内容为空'
+  console.log('Using fallback content:', fallback.substring(0, 100) + '...')
+  return fallback
 }
 
-// 获取显示消息 - 按照示例前端的逻辑
+// 获取显示消息 - 完全按照示例前端的逻辑
 function getDisplayMessage(): string {
   const mail = emailStore.selectedMail
   if (!mail) return '<p>没有选中邮件</p>'
 
   console.log('Getting display message for mail:', mail)
 
-  // 示例前端使用 S.value.message
+  // 示例前端主要使用 S.value.content 字段（不是message！）
+  if (mail.content) {
+    console.log('Using mail.content for display:', mail.content.substring(0, 100) + '...')
+    return mail.content
+  }
+
+  // 如果没有 content 字段，尝试 message
   if (mail.message) {
     console.log('Using mail.message for display')
     return mail.message
   }
 
-  // 如果没有 message 字段，尝试其他字段
-  if (mail.content) {
-    console.log('Using mail.content for display')
-    return mail.content
-  }
-
+  // 最后尝试其他字段
   if (mail.body) {
     console.log('Using mail.body for display')
     return mail.body
