@@ -202,43 +202,29 @@
 
         <div class="mail-body-content">
           <n-scrollbar style="max-height: 100%;">
-            <!-- Rendered View -->
+            <!-- Rendered View - 完全按照示例前端的逻辑 -->
             <div v-if="viewMode === 'rendered'" class="rendered-content">
-              <!-- 强制显示文本模式 -->
-              <div v-if="settingsStore.preferShowTextMail" class="text-content">
-                <pre class="text-display">{{ getTextContent() }}</pre>
-              </div>
+              <!-- 文本模式：显示 text 字段或从 message 提取的文本 -->
+              <pre
+                v-if="settingsStore.preferShowTextMail"
+                class="text-display"
+              >{{ getDisplayText() }}</pre>
 
-              <!-- HTML邮件显示 -->
-              <div v-else-if="isHtmlMail" class="html-content">
-                <!-- iframe模式 -->
-                <iframe
-                  v-if="settingsStore.useIframeShowMail"
-                  :srcdoc="sanitizedHtmlContent"
-                  class="html-iframe"
-                  sandbox="allow-same-origin allow-popups"
-                  @load="handleIframeLoad"
-                />
+              <!-- iframe模式：直接显示 message 内容 -->
+              <iframe
+                v-else-if="settingsStore.useIframeShowMail"
+                :srcdoc="getDisplayMessage()"
+                class="html-iframe"
+                sandbox="allow-same-origin"
+                @load="handleIframeLoad"
+              />
 
-                <!-- 安全渲染模式 -->
-                <ShadowHtmlComponent
-                  v-else
-                  :html-content="sanitizedHtmlContent"
-                  class="shadow-content"
-                />
-              </div>
-
-              <!-- 纯文本邮件 -->
-              <div v-else class="text-content">
-                <div v-if="getMailContent()" class="text-display">
-                  {{ getMailContent() }}
-                </div>
-                <div v-else class="no-content">
-                  <n-alert type="info" title="邮件内容为空">
-                    这封邮件没有文本内容。
-                  </n-alert>
-                </div>
-              </div>
+              <!-- 安全渲染模式：使用 ShadowHtmlComponent -->
+              <ShadowHtmlComponent
+                v-else
+                :html-content="getDisplayMessage()"
+                class="shadow-content"
+              />
             </div>
 
             <!-- Source View -->
@@ -494,18 +480,16 @@ const isHtmlMail = computed(() => {
   const mail = emailStore.selectedMail
   if (!mail) return false
 
-  // 检查是否为HTML邮件
-  return mail.is_html ||
-         (mail.message && mail.message.includes('<html')) ||
-         (mail.message && mail.message.includes('<!DOCTYPE')) ||
-         (mail.raw && mail.raw.includes('Content-Type: text/html'))
+  // 简化HTML检测逻辑，按照示例前端的方式
+  return mail.is_html === true || mail.is_html === 'true'
 })
 
 const sanitizedHtmlContent = computed(() => {
-  if (!emailStore.selectedMail?.message) return ''
+  const content = getDisplayMessage()
+  if (!content) return '<p>邮件内容为空</p>'
 
   // Basic HTML sanitization - remove dangerous elements and attributes
-  let html = emailStore.selectedMail.message
+  let html = content
 
   // Remove script tags and their content
   html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -535,21 +519,59 @@ const sanitizedHtmlContent = computed(() => {
   return styles + html
 })
 
-// 获取纯文本内容
-function getTextContent(): string {
+// 获取显示文本 - 按照示例前端的逻辑
+function getDisplayText(): string {
   const mail = emailStore.selectedMail
-  if (!mail) return ''
+  if (!mail) return '没有选中邮件'
 
-  // 如果有纯文本版本，优先使用
-  if (mail.text) return mail.text
+  console.log('Getting display text for mail:', mail)
 
-  // 从HTML中提取文本
-  if (mail.message && isHtmlMail.value) {
+  // 优先使用 text 字段（示例前端使用 S.value.text）
+  if (mail.text) {
+    console.log('Using mail.text:', mail.text)
+    return mail.text
+  }
+
+  // 如果没有 text 字段，从 message 中提取文本
+  if (mail.message) {
+    console.log('Extracting text from mail.message')
     return extractTextFromHtml(mail.message)
   }
 
-  // 使用解析后的内容
-  return getMailContent()
+  // 最后尝试其他字段
+  const content = mail.content || mail.body || mail.raw || ''
+  console.log('Using fallback content:', content.substring(0, 100) + '...')
+  return content
+}
+
+// 获取显示消息 - 按照示例前端的逻辑
+function getDisplayMessage(): string {
+  const mail = emailStore.selectedMail
+  if (!mail) return '<p>没有选中邮件</p>'
+
+  console.log('Getting display message for mail:', mail)
+
+  // 示例前端使用 S.value.message
+  if (mail.message) {
+    console.log('Using mail.message for display')
+    return mail.message
+  }
+
+  // 如果没有 message 字段，尝试其他字段
+  if (mail.content) {
+    console.log('Using mail.content for display')
+    return mail.content
+  }
+
+  if (mail.body) {
+    console.log('Using mail.body for display')
+    return mail.body
+  }
+
+  // 最后返回纯文本包装在HTML中
+  const textContent = mail.text || mail.raw || '邮件内容为空'
+  console.log('Wrapping text content in HTML')
+  return `<pre style="white-space: pre-wrap; font-family: inherit;">${textContent}</pre>`
 }
 
 // 获取原始内容
@@ -557,7 +579,7 @@ function getRawContent(): string {
   const mail = emailStore.selectedMail
   if (!mail) return ''
 
-  return mail.raw || mail.message || mail.body || mail.content || ''
+  return mail.raw || mail.message || mail.body || mail.content || mail.text || ''
 }
 
 // Methods

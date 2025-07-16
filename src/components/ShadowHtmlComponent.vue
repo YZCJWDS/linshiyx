@@ -183,13 +183,17 @@ function renderShadowDOM() {
 }
 
 onMounted(() => {
-  if (!useFallback.value) {
-    renderShadowDOM()
+  console.log('ShadowHtmlComponent mounted with content:', props.htmlContent?.substring(0, 100))
+
+  // 如果没有内容或内容为空，使用fallback
+  if (!props.htmlContent || props.htmlContent.trim() === '') {
+    console.log('No content, using fallback')
+    useFallback.value = true
+    return
   }
 
-  // 如果没有内容，使用fallback
-  if (!props.htmlContent) {
-    useFallback.value = true
+  if (!useFallback.value) {
+    renderShadowDOM()
   }
 })
 
