@@ -431,10 +431,16 @@ function formatDate(dateString: string) {
 
 .email-item--selected {
   border-color: var(--n-primary-color) !important;
-  background: var(--n-primary-color-suppl) !important;
-  box-shadow: 0 0 0 2px var(--n-primary-color-hover);
+  background: linear-gradient(90deg,
+    rgba(24, 160, 251, 0.15) 0%,
+    rgba(24, 160, 251, 0.08) 50%,
+    rgba(24, 160, 251, 0.03) 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(24, 160, 251, 0.3),
+    0 2px 8px rgba(24, 160, 251, 0.15);
   transform: translateX(4px);
   position: relative;
+  transition: all 0.2s ease;
 }
 
 .email-item--selected::before {
@@ -444,8 +450,22 @@ function formatDate(dateString: string) {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--n-primary-color);
+  background: linear-gradient(180deg,
+    var(--n-primary-color) 0%,
+    rgba(24, 160, 251, 0.8) 100%);
   border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 4px rgba(24, 160, 251, 0.4);
+}
+
+/* 深色模式下的选中效果 */
+[data-theme="dark"] .email-item--selected {
+  background: linear-gradient(90deg,
+    rgba(99, 179, 237, 0.2) 0%,
+    rgba(99, 179, 237, 0.12) 50%,
+    rgba(99, 179, 237, 0.05) 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(99, 179, 237, 0.4),
+    0 2px 8px rgba(99, 179, 237, 0.2);
 }
 
 .email-item-content {

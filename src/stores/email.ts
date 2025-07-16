@@ -289,7 +289,15 @@ export const useEmailStore = defineStore('email', () => {
 
   // 获取指定邮箱的新邮件数量
   const getNewMailCount = (address: string) => {
-    return newMailCounts.value[address] || 0
+    const count = newMailCounts.value[address] || 0
+    return count
+  }
+
+  // 手动添加新邮件计数（用于测试）
+  const addNewMailCount = (address: string, count: number = 1) => {
+    const currentCount = newMailCounts.value[address] || 0
+    newMailCounts.value[address] = currentCount + count
+    console.log(`🧪 Test: Added ${count} new mails to ${address}, total: ${newMailCounts.value[address]}`)
   }
   const selectedAddressMails = computed(() => {
     if (!selectedAddress.value) return []
@@ -591,6 +599,10 @@ export const useEmailStore = defineStore('email', () => {
       return
     }
 
+    // 记录刷新前的邮件数量，用于检测真正的新邮件
+    const isFirstLoad = mails.value.length === 0
+    console.log(`🔄 Silent refresh - First load: ${isFirstLoad}, Current mails: ${mails.value.length}`)
+
     try {
       console.log('🔄 Silent refresh mails for address:', address, 'keyword:', keyword)
 
@@ -641,11 +653,13 @@ export const useEmailStore = defineStore('email', () => {
 
       mails.value = processedMails
 
-      // 检测新邮件并更新计数
-      if (newMails.length > 0 && address) {
+      // 检测新邮件并更新计数（只有非首次加载才计算新邮件）
+      if (newMails.length > 0 && address && !isFirstLoad) {
         const currentCount = newMailCounts.value[address] || 0
         newMailCounts.value[address] = currentCount + newMails.length
         console.log(`📬 Found ${newMails.length} new mails for ${address}, total unread: ${newMailCounts.value[address]}`)
+      } else if (isFirstLoad) {
+        console.log(`🔄 First load for ${address}, not counting as new mails`)
       }
 
       console.log('✅ Silent refresh completed:', mails.value.length, 'mails')
@@ -657,10 +671,14 @@ export const useEmailStore = defineStore('email', () => {
 
   function startAutoRefresh(intervalMs = 30000) {
     stopAutoRefresh()
-    refreshInterval = setInterval(() => {
+    refreshInterval = setInterval(async () => {
       if (selectedAddress.value) {
         // 使用静默刷新而不是普通的loadMails
-        silentRefreshMails(selectedAddress.value.address)
+        try {
+          await silentRefreshMails(selectedAddress.value.address)
+        } catch (error) {
+          console.warn('Auto-refresh failed:', error)
+        }
       }
     }, intervalMs)
     console.log('🔄 Auto-refresh started, interval:', intervalMs + 'ms')
@@ -748,6 +766,7 @@ export const useEmailStore = defineStore('email', () => {
     hasAddresses,
     hasMails,
     getNewMailCount,
+    addNewMailCount,
     selectedAddressMails,
 
     // Actions
