@@ -7,6 +7,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const preferShowTextMail = ref(false) // 是否优先显示文本邮件
   const autoRefresh = ref(true) // 是否自动刷新
   const autoRefreshInterval = ref(30) // 自动刷新间隔（秒）
+
+  // 邮件显示模式设置
+  const mailDisplayMode = ref('auto') // 'auto' | 'light' | 'dark' | 'high-contrast'
   
   // 界面设置
   const mailboxSplitSize = ref(0.25) // 邮箱分栏大小
@@ -31,6 +34,7 @@ export const useSettingsStore = defineStore('settings', () => {
         useSideMargin.value = settings.useSideMargin ?? true
         useUTCDate.value = settings.useUTCDate ?? false
         isDark.value = settings.isDark ?? false
+        mailDisplayMode.value = settings.mailDisplayMode ?? 'auto'
         
         console.log('✅ Settings loaded from localStorage')
       }
@@ -50,7 +54,8 @@ export const useSettingsStore = defineStore('settings', () => {
         mailboxSplitSize: mailboxSplitSize.value,
         useSideMargin: useSideMargin.value,
         useUTCDate: useUTCDate.value,
-        isDark: isDark.value
+        isDark: isDark.value,
+        mailDisplayMode: mailDisplayMode.value
       }
       
       localStorage.setItem('linshiyx_settings', JSON.stringify(settings))
@@ -126,6 +131,12 @@ export const useSettingsStore = defineStore('settings', () => {
     isDark.value = !isDark.value
     saveSettings()
   }
+
+  // 设置邮件显示模式
+  function setMailDisplayMode(mode: 'auto' | 'light' | 'dark' | 'high-contrast') {
+    mailDisplayMode.value = mode
+    saveSettings()
+  }
   
   // 初始化
   loadSettings()
@@ -140,6 +151,7 @@ export const useSettingsStore = defineStore('settings', () => {
     useSideMargin,
     useUTCDate,
     isDark,
+    mailDisplayMode,
     
     // 方法
     loadSettings,
@@ -152,6 +164,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setMailboxSplitSize,
     toggleSideMargin,
     toggleUTCDate,
-    toggleTheme
+    toggleTheme,
+    setMailDisplayMode
   }
 })

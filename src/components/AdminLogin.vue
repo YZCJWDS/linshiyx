@@ -14,7 +14,7 @@
           <n-icon size="48" class="login-icon">
             <LockIcon />
           </n-icon>
-          <h1 class="login-title">临时邮箱管理系统</h1>
+          <h1 class="login-title">🌟 宇宙超级无敌帅的临时邮箱管理系统 🌟</h1>
           <p class="login-subtitle">请输入管理员密码</p>
         </div>
 
@@ -249,9 +249,16 @@ async function handleLogin() {
 
 .login-title {
   font-size: 24px;
-  font-weight: 600;
-  color: var(--n-text-color);
+  font-weight: 700;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0 0 8px 0;
+  text-align: center;
+  animation: rainbow-text 3s ease-in-out infinite;
+  text-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
 }
 
 .login-subtitle {
@@ -300,7 +307,8 @@ async function handleLogin() {
   }
   
   .login-title {
-    font-size: 20px;
+    font-size: 18px;
+    line-height: 1.3;
   }
 }
 
@@ -322,6 +330,18 @@ async function handleLogin() {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes rainbow-text {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 

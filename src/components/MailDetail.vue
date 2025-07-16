@@ -177,6 +177,15 @@
 
               <!-- 显示模式设置 (只在正常视图时显示) -->
               <template v-if="viewMode === 'rendered'">
+                <!-- 邮件显示模式选择 -->
+                <n-select
+                  v-model:value="settingsStore.mailDisplayMode"
+                  size="small"
+                  style="width: 120px"
+                  @update:value="settingsStore.setMailDisplayMode"
+                  :options="mailDisplayOptions"
+                />
+
                 <n-switch
                   v-model:value="settingsStore.preferShowTextMail"
                   size="small"
@@ -203,7 +212,7 @@
         <div class="mail-body-content">
           <n-scrollbar style="max-height: 100%;">
             <!-- Rendered View - 完全按照示例前端的逻辑 -->
-            <div v-if="viewMode === 'rendered'" class="rendered-content">
+            <div v-if="viewMode === 'rendered'" class="rendered-content" :class="mailContentClasses">
               <!-- 文本模式：显示 text 字段或从 message 提取的文本 -->
               <pre
                 v-if="settingsStore.preferShowTextMail"
@@ -251,6 +260,7 @@ import {
   NSwitch,
   NSpace,
   NAlert,
+  NSelect,
   useMessage
 } from 'naive-ui'
 import {
@@ -275,6 +285,14 @@ const message = useMessage()
 
 // Local state
 const viewMode = ref<'rendered' | 'source'>('rendered')
+
+// 邮件显示模式选项
+const mailDisplayOptions = [
+  { label: '🌟 自动适配', value: 'auto' },
+  { label: '☀️ 明亮模式', value: 'light' },
+  { label: '🌙 深色模式', value: 'dark' },
+  { label: '🔆 高对比度', value: 'high-contrast' }
+]
 
 // 解码邮件主题
 function getDecodedSubject(): string {
@@ -483,6 +501,21 @@ const isHtmlMail = computed(() => {
 
   // 简化HTML检测逻辑，按照示例前端的方式
   return mail.is_html === true || mail.is_html === 'true'
+})
+
+// 邮件内容动态样式类
+const mailContentClasses = computed(() => {
+  const classes = []
+
+  // 根据显示模式添加类
+  classes.push(`mail-display-${settingsStore.mailDisplayMode}`)
+
+  // 根据系统主题添加类
+  if (settingsStore.isDark) {
+    classes.push('system-dark')
+  }
+
+  return classes
 })
 
 const sanitizedHtmlContent = computed(() => {
@@ -914,6 +947,104 @@ function handleIframeLoad(event: Event) {
 
 .shadow-content {
   height: 100%;
+}
+
+/* 🎨 邮件显示模式样式 */
+
+/* 自动适配模式 - 跟随系统主题 */
+.mail-display-auto {
+  color: var(--n-text-color);
+  background: var(--n-card-color);
+}
+
+.mail-display-auto.system-dark {
+  /* 深色模式下强制覆盖邮件内的颜色 */
+}
+
+.mail-display-auto.system-dark :deep(*) {
+  color: #e0e0e0 !important;
+  background-color: transparent !important;
+}
+
+.mail-display-auto.system-dark :deep(a) {
+  color: #66b3ff !important;
+}
+
+/* 明亮模式 - 强制明亮显示 */
+.mail-display-light {
+  color: #333 !important;
+  background: #fff !important;
+}
+
+.mail-display-light :deep(*) {
+  color: #333 !important;
+  background-color: transparent !important;
+}
+
+.mail-display-light :deep(a) {
+  color: #0066cc !important;
+}
+
+.mail-display-light :deep(pre) {
+  background: #f8f9fa !important;
+  color: #333 !important;
+}
+
+/* 深色模式 - 强制深色显示 */
+.mail-display-dark {
+  color: #e0e0e0 !important;
+  background: #1a1a1a !important;
+}
+
+.mail-display-dark :deep(*) {
+  color: #e0e0e0 !important;
+  background-color: transparent !important;
+}
+
+.mail-display-dark :deep(a) {
+  color: #66b3ff !important;
+}
+
+.mail-display-dark :deep(pre) {
+  background: #2a2a2a !important;
+  color: #e0e0e0 !important;
+}
+
+/* 高对比度模式 - 最大化可读性 */
+.mail-display-high-contrast {
+  color: #000 !important;
+  background: #fff !important;
+  font-weight: 600 !important;
+}
+
+.mail-display-high-contrast :deep(*) {
+  color: #000 !important;
+  background-color: #fff !important;
+  font-weight: 600 !important;
+  border: 1px solid #000 !important;
+}
+
+.mail-display-high-contrast :deep(a) {
+  color: #0000ff !important;
+  text-decoration: underline !important;
+  font-weight: 700 !important;
+}
+
+.mail-display-high-contrast :deep(pre) {
+  background: #f0f0f0 !important;
+  color: #000 !important;
+  border: 2px solid #000 !important;
+}
+
+/* iframe 特殊处理 */
+.mail-display-dark .html-iframe,
+.mail-display-high-contrast .html-iframe {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.mail-display-dark .html-iframe img,
+.mail-display-high-contrast .html-iframe img {
+  filter: invert(1) hue-rotate(180deg);
 }
 
 .source-content {
