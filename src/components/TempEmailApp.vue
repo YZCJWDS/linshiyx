@@ -1,5 +1,10 @@
 <template>
   <div class="temp-email-app">
+    <!-- 背景图片层 -->
+    <div class="app-background"></div>
+
+    <!-- 内容层 -->
+    <div class="app-content">
     <!-- Header -->
     <header class="app-header">
       <div class="header-content">
@@ -103,12 +108,13 @@
     </main>
 
     <!-- Global Loading Overlay -->
-    <n-spin 
-      v-if="uiStore.loading" 
+    <n-spin
+      v-if="uiStore.loading"
       class="global-loading"
       size="large"
       description="Loading..."
     />
+    </div> <!-- 关闭 app-content -->
   </div>
 </template>
 
@@ -231,15 +237,59 @@ onUnmounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--n-color);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 背景图片层 */
+.app-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/preview.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(8px) brightness(0.3) contrast(0.8);
+  z-index: -1;
+  transform: scale(1.1); /* 避免边缘出现白边 */
+}
+
+/* 内容层 */
+.app-content {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+/* 深色模式下的背景调整 */
+[data-theme="dark"] .app-background {
+  filter: blur(8px) brightness(0.2) contrast(0.6);
+}
+
+[data-theme="dark"] .app-content {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .app-header {
   flex-shrink: 0;
   height: 60px;
-  border-bottom: 1px solid var(--n-border-color);
-  background: var(--n-card-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
   z-index: 100;
+}
+
+/* 深色模式下的头部样式 */
+[data-theme="dark"] .app-header {
+  background: rgba(0, 0, 0, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .header-content {
@@ -297,11 +347,20 @@ onUnmounted(() => {
 .column {
   display: flex;
   flex-direction: column;
-  background: var(--n-card-color);
-  border-radius: 8px;
-  border: 1px solid var(--n-border-color);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   min-height: 0;
+}
+
+/* 深色模式下的列样式 */
+[data-theme="dark"] .column {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .column-header {

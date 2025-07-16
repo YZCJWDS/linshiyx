@@ -29,26 +29,69 @@ export function formatDate(dateString: string, useUTC = false): string {
 
 // Format relative time (e.g., "2 minutes ago")
 export function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-  
-  if (diffInSeconds < 60) {
-    return 'Just now'
+  if (!dateString) return 'Unknown time'
+
+  try {
+    // 尝试多种日期格式解析
+    let date: Date
+
+    // 如果是ISO格式或包含T的格式，直接解析
+    if (dateString.includes('T') || dateString.includes('Z')) {
+      date = new Date(dateString)
+    } else {
+      // 如果是其他格式，尝试添加时区信息
+      date = new Date(dateString + (dateString.includes('+') ? '' : 'Z'))
+    }
+
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string:', dateString)
+      return dateString // 返回原始字符串
+    }
+
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    // 调试信息
+    console.log(`Time debug - Original: ${dateString}, Parsed: ${date.toISOString()}, Now: ${now.toISOString()}, Diff: ${diffInSeconds}s`)
+
+    // 如果时间差为负数（未来时间），可能是时区问题
+    if (diffInSeconds < 0) {
+      const absDiff = Math.abs(diffInSeconds)
+      if (absDiff < 3600 * 12) { // 如果差异小于12小时，可能是时区问题
+        console.warn('Future time detected, possible timezone issue')
+        return 'Just now'
+      }
+    }
+
+    const absDiffInSeconds = Math.abs(diffInSeconds)
+
+    if (absDiffInSeconds < 60) {
+      return 'Just now'
+    }
+
+    const diffInMinutes = Math.floor(absDiffInSeconds / 60)
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 30) {
+      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
+    }
+
+    // 超过30天，显示具体日期
+    return date.toLocaleDateString()
+
+  } catch (error) {
+    console.error('Error parsing date:', dateString, error)
+    return dateString
   }
-  
-  const diffInMinutes = Math.floor(diffInSeconds / 60)
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`
-  }
-  
-  const diffInHours = Math.floor(diffInMinutes / 60)
-  if (diffInHours < 24) {
-    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
-  }
-  
-  const diffInDays = Math.floor(diffInHours / 24)
-  return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
 }
 
 // Validate email address
