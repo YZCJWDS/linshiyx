@@ -526,20 +526,23 @@ function getDisplayText(): string {
 
   console.log('Getting display text for mail:', mail)
 
-  // 示例前端使用 S.value.text，但如果没有text字段，从content提取
-  if (mail.text) {
-    console.log('Using mail.text:', mail.text.substring(0, 100) + '...')
+  // 优先使用解析后的text字段（MIME解析器提取的纯文本）
+  if (mail.text && mail.text.trim()) {
+    console.log('Using parsed mail.text:', mail.text.substring(0, 100) + '...')
     return mail.text
   }
 
-  // 示例前端主要使用 content 字段
+  // 如果没有text字段，从content提取文本
   if (mail.content) {
     console.log('Extracting text from mail.content')
-    return extractTextFromHtml(mail.content)
+    const extracted = extractTextFromHtml(mail.content)
+    if (extracted && extracted.trim()) {
+      return extracted
+    }
   }
 
   // 最后尝试其他字段
-  const fallback = mail.message || mail.body || mail.raw || '邮件内容为空'
+  const fallback = mail.message || mail.body || '邮件内容为空'
   console.log('Using fallback content:', fallback.substring(0, 100) + '...')
   return fallback
 }
@@ -551,28 +554,33 @@ function getDisplayMessage(): string {
 
   console.log('Getting display message for mail:', mail)
 
-  // 示例前端主要使用 S.value.content 字段（不是message！）
-  if (mail.content) {
-    console.log('Using mail.content for display:', mail.content.substring(0, 100) + '...')
+  // 优先使用解析后的content字段（MIME解析器处理过的HTML）
+  if (mail.content && mail.content.trim()) {
+    console.log('Using parsed mail.content for display:', mail.content.substring(0, 100) + '...')
     return mail.content
   }
 
   // 如果没有 content 字段，尝试 message
-  if (mail.message) {
+  if (mail.message && mail.message.trim()) {
     console.log('Using mail.message for display')
     return mail.message
   }
 
-  // 最后尝试其他字段
-  if (mail.body) {
+  // 尝试body字段
+  if (mail.body && mail.body.trim()) {
     console.log('Using mail.body for display')
     return mail.body
   }
 
-  // 最后返回纯文本包装在HTML中
-  const textContent = mail.text || mail.raw || '邮件内容为空'
-  console.log('Wrapping text content in HTML')
-  return `<pre style="white-space: pre-wrap; font-family: inherit;">${textContent}</pre>`
+  // 如果有text字段，包装成HTML显示
+  if (mail.text && mail.text.trim()) {
+    console.log('Wrapping mail.text in HTML')
+    return `<pre style="white-space: pre-wrap; font-family: inherit; margin: 0; padding: 16px;">${mail.text}</pre>`
+  }
+
+  // 最后的fallback
+  console.log('Using final fallback')
+  return '<p style="padding: 16px; color: #999;">邮件内容为空或无法解析</p>'
 }
 
 // 获取原始内容

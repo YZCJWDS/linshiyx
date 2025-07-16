@@ -419,29 +419,54 @@ export const useEmailStore = defineStore('email', () => {
         try {
           if (mail.raw) {
             console.log('Parsing raw data for mail:', mail.id)
-            const rawData = JSON.parse(mail.raw)
 
-            // 按照示例前端的解析逻辑
-            if (rawData.version === "v2") {
-              mail.to_mail = rawData.to_name ? `${rawData.to_name} <${rawData.to_mail}>` : rawData.to_mail
-              mail.subject = rawData.subject
-              mail.is_html = rawData.is_html
-              mail.content = rawData.content
-              mail.raw = JSON.stringify(rawData, null, 2)
-            } else {
-              // v1 格式处理
-              mail.subject = rawData.subject
-              mail.is_html = rawData.content?.[0]?.type !== "text/plain"
-              mail.content = rawData.content?.[0]?.value
-              mail.raw = JSON.stringify(rawData, null, 2)
+            // 首先尝试作为JSON解析（示例前端的格式）
+            try {
+              const rawData = JSON.parse(mail.raw)
+
+              // 按照示例前端的解析逻辑
+              if (rawData.version === "v2") {
+                mail.to_mail = rawData.to_name ? `${rawData.to_name} <${rawData.to_mail}>` : rawData.to_mail
+                mail.subject = rawData.subject
+                mail.is_html = rawData.is_html
+                mail.content = rawData.content
+                mail.raw = JSON.stringify(rawData, null, 2)
+              } else {
+                // v1 格式处理
+                mail.subject = rawData.subject
+                mail.is_html = rawData.content?.[0]?.type !== "text/plain"
+                mail.content = rawData.content?.[0]?.value
+                mail.raw = JSON.stringify(rawData, null, 2)
+              }
+
+              console.log('Processed JSON mail:', {
+                id: mail.id,
+                subject: mail.subject,
+                is_html: mail.is_html,
+                content_length: mail.content?.length || 0
+              })
+            } catch (jsonError) {
+              // 如果JSON解析失败，尝试作为MIME邮件解析
+              console.log('JSON parse failed, trying MIME parse for mail:', mail.id)
+
+              const { parseMimeEmail, fixImageUrls } = await import('@/utils/mimeParser')
+              const parsed = parseMimeEmail(mail.raw)
+
+              mail.subject = parsed.subject
+              mail.from = parsed.from
+              mail.to_mail = parsed.to
+              mail.is_html = parsed.isHtml
+              mail.content = parsed.isHtml ? fixImageUrls(parsed.htmlContent) : parsed.textContent
+              mail.text = parsed.textContent
+
+              console.log('Processed MIME mail:', {
+                id: mail.id,
+                subject: mail.subject,
+                is_html: mail.is_html,
+                content_length: mail.content?.length || 0,
+                text_length: mail.text?.length || 0
+              })
             }
-
-            console.log('Processed mail:', {
-              id: mail.id,
-              subject: mail.subject,
-              is_html: mail.is_html,
-              content_length: mail.content?.length || 0
-            })
           }
         } catch (error) {
           console.warn('Failed to parse raw data for mail:', mail.id, error)
