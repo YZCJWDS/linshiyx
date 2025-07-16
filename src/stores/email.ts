@@ -13,6 +13,9 @@ export const useEmailStore = defineStore('email', () => {
   const selectedAddress = ref<EmailAddress | null>(null)
   const mails = ref<EmailMessage[]>([])
   const selectedMail = ref<EmailMessage | null>(null)
+
+  // 新邮件计数 - 记录每个邮箱的新邮件数量
+  const newMailCounts = ref<Record<string, number>>({})
   const userSettings = ref<UserSettings>({
     enable: false,
     enableMailVerify: false,
@@ -283,6 +286,11 @@ export const useEmailStore = defineStore('email', () => {
   // Computed
   const hasAddresses = computed(() => addresses.value.length > 0)
   const hasMails = computed(() => mails.value.length > 0)
+
+  // 获取指定邮箱的新邮件数量
+  const getNewMailCount = (address: string) => {
+    return newMailCounts.value[address] || 0
+  }
   const selectedAddressMails = computed(() => {
     if (!selectedAddress.value) return []
     return mails.value.filter(mail => mail.address === selectedAddress.value?.address)
@@ -545,6 +553,13 @@ export const useEmailStore = defineStore('email', () => {
   function selectAddress(address: EmailAddress) {
     selectedAddress.value = address
     selectedMail.value = null
+
+    // 清除该邮箱的新邮件计数
+    if (newMailCounts.value[address.address]) {
+      console.log(`🔄 Clearing ${newMailCounts.value[address.address]} new mail notifications for ${address.address}`)
+      newMailCounts.value[address.address] = 0
+    }
+
     loadMailsForAddress(address)
   }
 
@@ -621,13 +636,16 @@ export const useEmailStore = defineStore('email', () => {
       }))
 
       // 静默更新邮件列表（不触发UI加载状态）
-      const oldCount = mails.value.length
-      mails.value = processedMails
-      const newCount = mails.value.length
+      const oldMailIds = new Set(mails.value.map(mail => mail.id))
+      const newMails = processedMails.filter(mail => !oldMailIds.has(mail.id))
 
-      if (newCount > oldCount) {
-        console.log(`📬 Found ${newCount - oldCount} new mails`)
-        // 可以在这里添加新邮件通知
+      mails.value = processedMails
+
+      // 检测新邮件并更新计数
+      if (newMails.length > 0 && address) {
+        const currentCount = newMailCounts.value[address] || 0
+        newMailCounts.value[address] = currentCount + newMails.length
+        console.log(`📬 Found ${newMails.length} new mails for ${address}, total unread: ${newMailCounts.value[address]}`)
       }
 
       console.log('✅ Silent refresh completed:', mails.value.length, 'mails')
@@ -724,10 +742,12 @@ export const useEmailStore = defineStore('email', () => {
     selectedMail,
     userSettings,
     loading,
+    newMailCounts,
 
     // Computed
     hasAddresses,
     hasMails,
+    getNewMailCount,
     selectedAddressMails,
 
     // Actions

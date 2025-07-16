@@ -338,14 +338,8 @@ async function handleRefreshMails() {
 
 // Get unread mail count for an address
 function getUnreadCount(address: EmailAddress): number {
-  // 如果当前选中的地址就是这个地址，返回0（因为用户正在查看）
-  if (emailStore.selectedAddress?.id === address.id) {
-    return 0
-  }
-
-  // 返回该地址的邮件数量（作为未读数量）
-  // 注意：这里使用 mail_count 字段，如果后端有专门的未读数量字段可以替换
-  return parseInt(address.mail_count?.toString() || '0')
+  // 使用新的新邮件计数系统
+  return emailStore.getNewMailCount(address.address)
 }
 
 // Format date for display
@@ -436,8 +430,22 @@ function formatDate(dateString: string) {
 }
 
 .email-item--selected {
-  border-color: var(--n-primary-color);
-  background: var(--n-primary-color-suppl);
+  border-color: var(--n-primary-color) !important;
+  background: var(--n-primary-color-suppl) !important;
+  box-shadow: 0 0 0 2px var(--n-primary-color-hover);
+  transform: translateX(4px);
+  position: relative;
+}
+
+.email-item--selected::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--n-primary-color);
+  border-radius: 0 2px 2px 0;
 }
 
 .email-item-content {
@@ -456,6 +464,18 @@ function formatDate(dateString: string) {
 .unread-badge {
   margin-left: auto;
   flex-shrink: 0;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
 }
 
 .email-icon {

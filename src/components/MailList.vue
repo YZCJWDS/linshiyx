@@ -461,8 +461,22 @@ watch(() => emailStore.selectedAddress, () => {
 }
 
 .mail-item--selected {
-  border-color: var(--n-primary-color);
-  background: var(--n-primary-color-suppl);
+  border-color: var(--n-primary-color) !important;
+  background: var(--n-primary-color-suppl) !important;
+  box-shadow: 0 0 0 2px var(--n-primary-color-hover);
+  transform: translateX(4px);
+  position: relative;
+}
+
+.mail-item--selected::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--n-primary-color);
+  border-radius: 0 2px 2px 0;
 }
 
 .mail-item--unread {
