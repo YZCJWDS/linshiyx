@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { EmailAddress, EmailMessage, UserSettings } from '@/types'
 import { addressApi, mailApi, settingsApi } from '@/utils/api'
-import { parseMimeEmail, fixImageUrls } from '@/utils/mimeParser'
+import { parseEmailMessage } from '@/utils/wasmMailParser'
 import { useUiStore } from './ui'
 
 export const useEmailStore = defineStore('email', () => {
@@ -416,7 +416,7 @@ export const useEmailStore = defineStore('email', () => {
       })
 
       // 按照示例前端的方式解析邮件数据
-      const processedMails = (response.results || []).map((mail: EmailMessage) => {
+      const processedMails = await Promise.all((response.results || []).map(async (mail: EmailMessage) => {
         try {
           if (mail.raw) {
             console.log('Parsing raw data for mail:', mail.id)
@@ -447,23 +447,17 @@ export const useEmailStore = defineStore('email', () => {
                 content_length: mail.content?.length || 0
               })
             } catch (jsonError) {
-              // 如果JSON解析失败，尝试作为MIME邮件解析
-              console.log('JSON parse failed, trying MIME parse for mail:', mail.id)
+              // 如果JSON解析失败，使用WASM邮件解析器（完全按照示例前端）
+              console.log('JSON parse failed, trying WASM parse for mail:', mail.id)
 
-              const parsed = parseMimeEmail(mail.raw)
+              await parseEmailMessage(mail)
 
-              mail.subject = parsed.subject
-              mail.from = parsed.from
-              mail.to_mail = parsed.to
-              mail.is_html = parsed.isHtml
-              mail.content = parsed.isHtml ? fixImageUrls(parsed.htmlContent) : parsed.textContent
-              mail.text = parsed.textContent
-
-              console.log('Processed MIME mail:', {
+              console.log('Processed WASM mail:', {
                 id: mail.id,
                 subject: mail.subject,
                 is_html: mail.is_html,
                 content_length: mail.content?.length || 0,
+                message_length: mail.message?.length || 0,
                 text_length: mail.text?.length || 0
               })
             }
@@ -472,7 +466,7 @@ export const useEmailStore = defineStore('email', () => {
           console.warn('Failed to parse raw data for mail:', mail.id, error)
         }
         return mail
-      })
+      }))
 
       mails.value = processedMails
       console.log('Loaded mails:', mails.value.length)
