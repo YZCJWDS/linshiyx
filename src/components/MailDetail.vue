@@ -265,6 +265,7 @@ import {
 } from '@vicons/ionicons5'
 import { useEmailStore, useSettingsStore } from '@/stores'
 import { formatDate, copyToClipboard, extractTextFromHtml } from '@/utils/helpers'
+import { testDecoding } from '@/utils/mimeParser'
 import type { EmailAttachment } from '@/types'
 import ShadowHtmlComponent from './ShadowHtmlComponent.vue'
 
@@ -525,6 +526,9 @@ function getDisplayText(): string {
   if (!mail) return '没有选中邮件'
 
   console.log('Getting display text for mail:', mail)
+
+  // 测试解码功能
+  testDecoding()
 
   // 优先使用解析后的text字段（MIME解析器提取的纯文本）
   if (mail.text && mail.text.trim()) {

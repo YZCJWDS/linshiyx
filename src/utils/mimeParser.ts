@@ -12,13 +12,24 @@ export interface ParsedMail {
 
 // 解码 quoted-printable 编码
 function decodeQuotedPrintable(str: string): string {
-  return str
-    .replace(/=\r?\n/g, '') // 移除软换行
+  console.log('Decoding quoted-printable, input length:', str.length)
+  console.log('Input sample:', str.substring(0, 200))
+
+  let decoded = str
+    // 首先移除软换行（= 在行尾）
+    .replace(/=\r?\n/g, '')
+    // 然后解码所有 =XX 格式的十六进制编码
     .replace(/=([0-9A-F]{2})/gi, (match, hex) => {
-      return String.fromCharCode(parseInt(hex, 16))
+      const charCode = parseInt(hex, 16)
+      const char = String.fromCharCode(charCode)
+      console.log(`Decoding ${match} (${hex}) -> ${charCode} -> "${char}"`)
+      return char
     })
-    .replace(/=20/g, ' ') // 空格
-    .replace(/=3D/g, '=') // 等号
+
+  console.log('Decoded result length:', decoded.length)
+  console.log('Decoded sample:', decoded.substring(0, 200))
+
+  return decoded
 }
 
 // 解码 base64 编码
@@ -184,6 +195,15 @@ export function parseMimeEmail(rawEmail: string): ParsedMail {
   })
   
   return result
+}
+
+// 测试解码函数
+export function testDecoding() {
+  const testString = "Your verification code is: 086765=20=20If you are having any issues with your account, please don't =\nhesitate to contact us by replying to this mail."
+  console.log('Test input:', testString)
+  const decoded = decodeQuotedPrintable(testString)
+  console.log('Test output:', decoded)
+  return decoded
 }
 
 // 修复HTML中的图片链接
