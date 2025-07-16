@@ -39,7 +39,7 @@ function renderShadowDOM() {
       }
     }
 
-    if (shadowRoot) {
+    if (shadowRoot && props.htmlContent) {
       // 添加基础样式
       const styles = `
         <style>
@@ -185,6 +185,11 @@ function renderShadowDOM() {
 onMounted(() => {
   if (!useFallback.value) {
     renderShadowDOM()
+  }
+
+  // 如果没有内容，使用fallback
+  if (!props.htmlContent) {
+    useFallback.value = true
   }
 })
 

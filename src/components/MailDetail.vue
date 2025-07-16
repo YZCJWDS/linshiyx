@@ -154,24 +154,49 @@
       <!-- Mail Body -->
       <div class="mail-body">
         <div class="mail-body-header">
-          <span class="body-title">Message Content</span>
+          <span class="body-title">邮件内容</span>
           <div class="view-options">
-            <n-button-group size="small">
-              <n-button
-                :type="viewMode === 'rendered' ? 'primary' : 'default'"
-                @click="viewMode = 'rendered'"
-                size="small"
-              >
-                正常视图
-              </n-button>
-              <n-button
-                :type="viewMode === 'source' ? 'primary' : 'default'"
-                @click="viewMode = 'source'"
-                size="small"
-              >
-                源码视图
-              </n-button>
-            </n-button-group>
+            <n-space size="small">
+              <!-- 视图模式切换 -->
+              <n-button-group size="small">
+                <n-button
+                  :type="viewMode === 'rendered' ? 'primary' : 'default'"
+                  @click="viewMode = 'rendered'"
+                  size="small"
+                >
+                  正常视图
+                </n-button>
+                <n-button
+                  :type="viewMode === 'source' ? 'primary' : 'default'"
+                  @click="viewMode = 'source'"
+                  size="small"
+                >
+                  源码视图
+                </n-button>
+              </n-button-group>
+
+              <!-- 显示模式设置 (只在正常视图时显示) -->
+              <template v-if="viewMode === 'rendered'">
+                <n-switch
+                  v-model:value="settingsStore.preferShowTextMail"
+                  size="small"
+                  @update:value="settingsStore.saveSettings"
+                >
+                  <template #checked>文本模式</template>
+                  <template #unchecked>富文本模式</template>
+                </n-switch>
+
+                <n-switch
+                  v-if="isHtmlMail && !settingsStore.preferShowTextMail"
+                  v-model:value="settingsStore.useIframeShowMail"
+                  size="small"
+                  @update:value="settingsStore.saveSettings"
+                >
+                  <template #checked>iframe渲染</template>
+                  <template #unchecked>安全渲染</template>
+                </n-switch>
+              </template>
+            </n-space>
           </div>
         </div>
 
@@ -179,66 +204,39 @@
           <n-scrollbar style="max-height: 100%;">
             <!-- Rendered View -->
             <div v-if="viewMode === 'rendered'" class="rendered-content">
-              <!-- 显示设置选项 -->
-              <div class="display-options">
-                <n-space size="small">
-                  <n-switch
-                    v-model:value="settingsStore.preferShowTextMail"
-                    size="small"
-                    @update:value="settingsStore.saveSettings"
-                  >
-                    <template #checked>文本</template>
-                    <template #unchecked>富文本</template>
-                  </n-switch>
-
-                  <n-switch
-                    v-if="isHtmlMail && !settingsStore.preferShowTextMail"
-                    v-model:value="settingsStore.useIframeShowMail"
-                    size="small"
-                    @update:value="settingsStore.saveSettings"
-                  >
-                    <template #checked>iframe</template>
-                    <template #unchecked>安全渲染</template>
-                  </n-switch>
-                </n-space>
+              <!-- 强制显示文本模式 -->
+              <div v-if="settingsStore.preferShowTextMail" class="text-content">
+                <pre class="text-display">{{ getTextContent() }}</pre>
               </div>
 
-              <!-- 邮件内容显示 -->
-              <div class="mail-content-display">
-                <!-- 强制显示文本模式 -->
-                <div v-if="settingsStore.preferShowTextMail" class="text-content">
-                  <pre class="text-display">{{ getTextContent() }}</pre>
+              <!-- HTML邮件显示 -->
+              <div v-else-if="isHtmlMail" class="html-content">
+                <!-- iframe模式 -->
+                <iframe
+                  v-if="settingsStore.useIframeShowMail"
+                  :srcdoc="sanitizedHtmlContent"
+                  class="html-iframe"
+                  sandbox="allow-same-origin allow-popups"
+                  @load="handleIframeLoad"
+                />
+
+                <!-- 安全渲染模式 -->
+                <ShadowHtmlComponent
+                  v-else
+                  :html-content="sanitizedHtmlContent"
+                  class="shadow-content"
+                />
+              </div>
+
+              <!-- 纯文本邮件 -->
+              <div v-else class="text-content">
+                <div v-if="getMailContent()" class="text-display">
+                  {{ getMailContent() }}
                 </div>
-
-                <!-- HTML邮件显示 -->
-                <div v-else-if="isHtmlMail">
-                  <!-- iframe模式 -->
-                  <iframe
-                    v-if="settingsStore.useIframeShowMail"
-                    :srcdoc="sanitizedHtmlContent"
-                    class="html-iframe"
-                    sandbox="allow-same-origin allow-popups"
-                    @load="handleIframeLoad"
-                  />
-
-                  <!-- 安全渲染模式 -->
-                  <ShadowHtmlComponent
-                    v-else
-                    :html-content="sanitizedHtmlContent"
-                    class="shadow-content"
-                  />
-                </div>
-
-                <!-- 纯文本邮件 -->
-                <div v-else class="text-content">
-                  <div v-if="getMailContent()" class="text-display">
-                    {{ getMailContent() }}
-                  </div>
-                  <div v-else class="no-content">
-                    <n-alert type="info" title="邮件内容为空">
-                      这封邮件没有文本内容。
-                    </n-alert>
-                  </div>
+                <div v-else class="no-content">
+                  <n-alert type="info" title="邮件内容为空">
+                    这封邮件没有文本内容。
+                  </n-alert>
                 </div>
               </div>
             </div>
@@ -849,21 +847,11 @@ function handleIframeLoad(event: Event) {
 
 .rendered-content {
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  padding: 16px;
 }
 
-.display-options {
-  flex-shrink: 0;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--n-border-color);
-  background: var(--n-card-color);
-}
-
-.mail-content-display {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+.html-content {
+  height: 100%;
 }
 
 .html-iframe {
@@ -875,12 +863,11 @@ function handleIframeLoad(event: Event) {
 
 .text-content {
   height: 100%;
-  overflow: auto;
 }
 
 .text-display {
-  padding: 16px;
   margin: 0;
+  padding: 0;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
@@ -892,7 +879,6 @@ function handleIframeLoad(event: Event) {
 
 .shadow-content {
   height: 100%;
-  overflow: auto;
 }
 
 .source-content {
