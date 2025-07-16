@@ -1,7 +1,13 @@
 <template>
   <div class="temp-email-app">
     <!-- 背景图片层 -->
-    <div class="app-background"></div>
+    <div
+      class="app-background"
+      :class="{
+        'background-loaded': backgroundLoaded,
+        'background-error': backgroundError
+      }"
+    ></div>
 
     <!-- 内容层 -->
     <div class="app-content">
@@ -119,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { 
   NIcon, 
   NButton, 
@@ -145,9 +151,41 @@ const uiStore = useUiStore()
 const authStore = useAuthStore()
 const message = useMessage()
 
+// 背景图片状态
+const backgroundLoaded = ref(false)
+const backgroundError = ref(false)
+
+// 检查背景图片加载状态
+function checkBackgroundImage() {
+  const img = new Image()
+  img.onload = () => {
+    backgroundLoaded.value = true
+    console.log('✅ Background image loaded successfully')
+
+    // 检查图片尺寸是否适合作为背景
+    const aspectRatio = img.width / img.height
+    const screenAspectRatio = window.innerWidth / window.innerHeight
+
+    if (Math.abs(aspectRatio - screenAspectRatio) > 0.5) {
+      console.warn('⚠️ Background image aspect ratio may not be optimal for current screen')
+      console.log(`Image: ${img.width}x${img.height} (${aspectRatio.toFixed(2)})`)
+      console.log(`Screen: ${window.innerWidth}x${window.innerHeight} (${screenAspectRatio.toFixed(2)})`)
+      console.log('💡 Consider providing additional images for better coverage')
+    }
+  }
+  img.onerror = () => {
+    backgroundError.value = true
+    console.error('❌ Failed to load background image: /preview.jpg')
+    console.log('💡 Please ensure preview.jpg is in the public directory')
+  }
+  img.src = '/preview.jpg'
+}
+
 // 初始化应用时加载存储的数据
 onMounted(async () => {
   try {
+    // 检查背景图片
+    checkBackgroundImage()
     // 首先初始化认证（可能会加载邮箱池）
     await authStore.initAuth()
 
@@ -241,7 +279,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* 背景图片层 */
+/* 背景图片层 - 参考VSCode背景插件方法 */
 .app-background {
   position: fixed;
   top: 0;
@@ -252,9 +290,29 @@ onUnmounted(() => {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(8px) brightness(0.3) contrast(0.8);
+  background-attachment: fixed;
+  z-index: -2;
+  transform: scale(1.05); /* 轻微缩放避免边缘 */
+}
+
+/* 背景遮罩层 - 提供更好的可读性 */
+.app-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.5) 25%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.5) 75%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
+  backdrop-filter: blur(2px);
   z-index: -1;
-  transform: scale(1.1); /* 避免边缘出现白边 */
 }
 
 /* 内容层 */
@@ -263,33 +321,68 @@ onUnmounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  background: transparent;
   z-index: 1;
 }
 
 /* 深色模式下的背景调整 */
-[data-theme="dark"] .app-background {
-  filter: blur(8px) brightness(0.2) contrast(0.6);
+[data-theme="dark"] .app-background::after {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.4) 25%,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(0, 0, 0, 0.4) 75%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  backdrop-filter: blur(3px);
 }
 
-[data-theme="dark"] .app-content {
-  background: rgba(0, 0, 0, 0.1);
+/* 背景图片加载状态 */
+.app-background.background-loaded {
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.app-background:not(.background-loaded) {
+  opacity: 0.3;
+}
+
+.app-background.background-error {
+  background: linear-gradient(
+    135deg,
+    #667eea 0%,
+    #764ba2 100%
+  );
+  opacity: 0.8;
+}
+
+.app-background.background-error::after {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.6) 25%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.6) 75%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
 }
 
 .app-header {
   flex-shrink: 0;
   height: 60px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(15px) saturate(1.2);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
   z-index: 100;
 }
 
 /* 深色模式下的头部样式 */
 [data-theme="dark"] .app-header {
-  background: rgba(0, 0, 0, 0.7);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
 }
 
 .header-content {
@@ -347,20 +440,49 @@ onUnmounted(() => {
 .column {
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(15px) saturate(1.1);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   overflow: hidden;
   min-height: 0;
+  position: relative;
+}
+
+/* 列的内部光效 */
+.column::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%);
+  z-index: 1;
 }
 
 /* 深色模式下的列样式 */
 [data-theme="dark"] .column {
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .column::before {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%);
 }
 
 .column-header {
