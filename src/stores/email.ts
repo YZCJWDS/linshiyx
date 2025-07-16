@@ -565,22 +565,94 @@ export const useEmailStore = defineStore('email', () => {
     mails.value = []
   }
 
-  // Auto-refresh mails for selected address
+  // Auto-refresh mails for selected address (按照示例前端的方式)
   let refreshInterval: NodeJS.Timeout | null = null
+
+  // 后台静默刷新邮件（不显示加载状态）
+  async function silentRefreshMails(address?: string, keyword?: string) {
+    // 如果正在加载，跳过这次刷新（完全按照示例前端的逻辑）
+    if (loading.value.mails) {
+      console.log('⏭️ Skipping auto-refresh: already loading')
+      return
+    }
+
+    try {
+      console.log('🔄 Silent refresh mails for address:', address, 'keyword:', keyword)
+
+      // 使用新的 API 调用方式，不设置loading状态
+      const response = await mailApi.getAll({
+        limit: 100,
+        offset: 0,
+        address,
+        keyword
+      })
+
+      // 按照示例前端的方式解析邮件数据
+      const processedMails = await Promise.all((response.results || []).map(async (mail: EmailMessage) => {
+        try {
+          if (mail.raw) {
+            // 首先尝试作为JSON解析（示例前端的格式）
+            try {
+              const rawData = JSON.parse(mail.raw)
+
+              // 按照示例前端的解析逻辑
+              if (rawData.version === "v2") {
+                mail.to_mail = rawData.to_name ? `${rawData.to_name} <${rawData.to_mail}>` : rawData.to_mail
+                mail.subject = rawData.subject
+                mail.is_html = rawData.is_html
+                mail.content = rawData.content
+                mail.raw = JSON.stringify(rawData, null, 2)
+              } else {
+                // v1 格式处理
+                mail.subject = rawData.subject
+                mail.is_html = rawData.content?.[0]?.type !== "text/plain"
+                mail.content = rawData.content?.[0]?.value
+                mail.raw = JSON.stringify(rawData, null, 2)
+              }
+            } catch (jsonError) {
+              // 如果JSON解析失败，使用WASM邮件解析器
+              await parseEmailMessage(mail)
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to parse raw data for mail:', mail.id, error)
+        }
+        return mail
+      }))
+
+      // 静默更新邮件列表（不触发UI加载状态）
+      const oldCount = mails.value.length
+      mails.value = processedMails
+      const newCount = mails.value.length
+
+      if (newCount > oldCount) {
+        console.log(`📬 Found ${newCount - oldCount} new mails`)
+        // 可以在这里添加新邮件通知
+      }
+
+      console.log('✅ Silent refresh completed:', mails.value.length, 'mails')
+    } catch (error) {
+      console.error('Silent refresh error:', error)
+      // 静默处理错误，不显示错误提示
+    }
+  }
 
   function startAutoRefresh(intervalMs = 30000) {
     stopAutoRefresh()
     refreshInterval = setInterval(() => {
       if (selectedAddress.value) {
-        loadMails(selectedAddress.value.address)
+        // 使用静默刷新而不是普通的loadMails
+        silentRefreshMails(selectedAddress.value.address)
       }
     }, intervalMs)
+    console.log('🔄 Auto-refresh started, interval:', intervalMs + 'ms')
   }
 
   function stopAutoRefresh() {
     if (refreshInterval) {
       clearInterval(refreshInterval)
       refreshInterval = null
+      console.log('⏹️ Auto-refresh stopped')
     }
   }
 
@@ -671,6 +743,7 @@ export const useEmailStore = defineStore('email', () => {
     clearSelection,
     startAutoRefresh,
     stopAutoRefresh,
+    silentRefreshMails,
     initializeStore,
 
     // Storage functions (for debugging)
