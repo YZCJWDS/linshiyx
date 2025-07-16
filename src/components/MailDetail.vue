@@ -179,29 +179,73 @@
           <n-scrollbar style="max-height: 100%;">
             <!-- Rendered View -->
             <div v-if="viewMode === 'rendered'" class="rendered-content">
-              <iframe
-                v-if="emailStore.selectedMail.is_html"
-                :srcdoc="sanitizedHtmlContent"
-                class="html-iframe"
-                sandbox="allow-same-origin"
-                @load="handleIframeLoad"
-              />
-              <div v-else class="text-content">
-                <!-- 智能显示邮件内容 -->
-                <div v-if="getMailContent()">
-                  {{ getMailContent() }}
+              <!-- 显示设置选项 -->
+              <div class="display-options">
+                <n-space size="small">
+                  <n-switch
+                    v-model:value="settingsStore.preferShowTextMail"
+                    size="small"
+                    @update:value="settingsStore.saveSettings"
+                  >
+                    <template #checked>文本</template>
+                    <template #unchecked>富文本</template>
+                  </n-switch>
+
+                  <n-switch
+                    v-if="isHtmlMail && !settingsStore.preferShowTextMail"
+                    v-model:value="settingsStore.useIframeShowMail"
+                    size="small"
+                    @update:value="settingsStore.saveSettings"
+                  >
+                    <template #checked>iframe</template>
+                    <template #unchecked>安全渲染</template>
+                  </n-switch>
+                </n-space>
+              </div>
+
+              <!-- 邮件内容显示 -->
+              <div class="mail-content-display">
+                <!-- 强制显示文本模式 -->
+                <div v-if="settingsStore.preferShowTextMail" class="text-content">
+                  <pre class="text-display">{{ getTextContent() }}</pre>
                 </div>
-                <div v-else class="no-content">
-                  <n-alert type="info" title="邮件内容为空">
-                    这封邮件没有文本内容。
-                  </n-alert>
+
+                <!-- HTML邮件显示 -->
+                <div v-else-if="isHtmlMail">
+                  <!-- iframe模式 -->
+                  <iframe
+                    v-if="settingsStore.useIframeShowMail"
+                    :srcdoc="sanitizedHtmlContent"
+                    class="html-iframe"
+                    sandbox="allow-same-origin allow-popups"
+                    @load="handleIframeLoad"
+                  />
+
+                  <!-- 安全渲染模式 -->
+                  <ShadowHtmlComponent
+                    v-else
+                    :html-content="sanitizedHtmlContent"
+                    class="shadow-content"
+                  />
+                </div>
+
+                <!-- 纯文本邮件 -->
+                <div v-else class="text-content">
+                  <div v-if="getMailContent()" class="text-display">
+                    {{ getMailContent() }}
+                  </div>
+                  <div v-else class="no-content">
+                    <n-alert type="info" title="邮件内容为空">
+                      这封邮件没有文本内容。
+                    </n-alert>
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- Source View -->
             <div v-else class="source-content">
-              <pre class="source-code">{{ getMailContent() || '邮件内容为空' }}</pre>
+              <pre class="source-code">{{ getRawContent() || '邮件内容为空' }}</pre>
             </div>
           </n-scrollbar>
         </div>
@@ -220,6 +264,9 @@ import {
   NButtonGroup,
   NScrollbar,
   NPopconfirm,
+  NSwitch,
+  NSpace,
+  NAlert,
   useMessage
 } from 'naive-ui'
 import {
@@ -232,11 +279,13 @@ import {
   Trash as DeleteIcon,
   Attach as AttachIcon
 } from '@vicons/ionicons5'
-import { useEmailStore } from '@/stores'
+import { useEmailStore, useSettingsStore } from '@/stores'
 import { formatDate, copyToClipboard, extractTextFromHtml } from '@/utils/helpers'
 import type { EmailAttachment } from '@/types'
+import ShadowHtmlComponent from './ShadowHtmlComponent.vue'
 
 const emailStore = useEmailStore()
+const settingsStore = useSettingsStore()
 const message = useMessage()
 
 // Local state
@@ -443,6 +492,17 @@ const hasAttachments = computed(() => {
   return emailStore.selectedMail?.attachments && emailStore.selectedMail.attachments.length > 0
 })
 
+const isHtmlMail = computed(() => {
+  const mail = emailStore.selectedMail
+  if (!mail) return false
+
+  // 检查是否为HTML邮件
+  return mail.is_html ||
+         (mail.message && mail.message.includes('<html')) ||
+         (mail.message && mail.message.includes('<!DOCTYPE')) ||
+         (mail.raw && mail.raw.includes('Content-Type: text/html'))
+})
+
 const sanitizedHtmlContent = computed(() => {
   if (!emailStore.selectedMail?.message) return ''
 
@@ -476,6 +536,31 @@ const sanitizedHtmlContent = computed(() => {
 
   return styles + html
 })
+
+// 获取纯文本内容
+function getTextContent(): string {
+  const mail = emailStore.selectedMail
+  if (!mail) return ''
+
+  // 如果有纯文本版本，优先使用
+  if (mail.text) return mail.text
+
+  // 从HTML中提取文本
+  if (mail.message && isHtmlMail.value) {
+    return extractTextFromHtml(mail.message)
+  }
+
+  // 使用解析后的内容
+  return getMailContent()
+}
+
+// 获取原始内容
+function getRawContent(): string {
+  const mail = emailStore.selectedMail
+  if (!mail) return ''
+
+  return mail.raw || mail.message || mail.body || mail.content || ''
+}
 
 // Methods
 async function copyMailContent() {
@@ -764,6 +849,21 @@ function handleIframeLoad(event: Event) {
 
 .rendered-content {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.display-options {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--n-border-color);
+  background: var(--n-card-color);
+}
+
+.mail-content-display {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .html-iframe {
@@ -774,12 +874,25 @@ function handleIframeLoad(event: Event) {
 }
 
 .text-content {
+  height: 100%;
+  overflow: auto;
+}
+
+.text-display {
   padding: 16px;
+  margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
   color: var(--n-text-color);
   font-family: inherit;
+  background: transparent;
+  border: none;
+}
+
+.shadow-content {
+  height: 100%;
+  overflow: auto;
 }
 
 .source-content {
