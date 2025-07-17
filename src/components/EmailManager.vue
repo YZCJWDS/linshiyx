@@ -150,25 +150,27 @@
     <!-- Create Email Modal -->
     <n-modal
       v-model:show="showCreateModal"
-      preset="card"
-      title="✨ 生成新邮箱"
       :style="modalStyle"
       :bordered="false"
-      :segmented="true"
       class="create-email-modal"
+      :mask-closable="false"
+      transform-origin="center"
     >
-      <!-- 背景图片层 -->
-      <div class="modal-background"></div>
+      <!-- 弹窗背景图片层 -->
+      <div class="modal-backdrop">
+        <div class="modal-background-image"></div>
+        <div class="modal-overlay"></div>
+      </div>
 
-      <!-- 内容层 -->
-      <div class="modal-content">
+      <!-- 弹窗内容 -->
+      <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title-section">
             <n-icon size="24" class="modal-icon">
               <MailIcon />
             </n-icon>
             <div class="modal-title-text">
-              <h3>创建临时邮箱</h3>
+              <h3>✨ 创建临时邮箱</h3>
               <p>快速生成一个新的临时邮箱地址</p>
             </div>
           </div>
@@ -610,46 +612,111 @@ function getLastMailTime(address: EmailAddress): string {
   border-top: 1px solid var(--n-border-color);
 }
 
-/* Create Email Modal Styles */
+/* Create Email Modal Styles - 参考主页面背景处理 */
 .create-email-modal {
   position: relative;
-  overflow: hidden;
 }
 
-.modal-background {
+/* 弹窗背景层 - 类似主页面的背景处理 */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.modal-background-image {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background-image: url('/yll.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(3px) brightness(0.4);
-  z-index: -1;
-  transform: scale(1.1);
+  background-attachment: fixed;
+  transform: scale(1.05);
+  z-index: -2;
 }
 
-.modal-content {
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.6) 25%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.6) 75%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
+  backdrop-filter: blur(3px);
+  z-index: -1;
+}
+
+/* 深色模式下的背景遮罩 */
+[data-theme="dark"] .modal-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.5) 25%,
+    rgba(0, 0, 0, 0.3) 50%,
+    rgba(0, 0, 0, 0.5) 75%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  backdrop-filter: blur(4px);
+}
+
+/* 弹窗卡片 */
+.modal-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 12px;
-  padding: 0;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  overflow: hidden;
   z-index: 1;
 }
 
-[data-theme="dark"] .modal-content {
-  background: rgba(0, 0, 0, 0.85);
+[data-theme="dark"] .modal-card {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .modal-header {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   background: linear-gradient(135deg,
-    rgba(24, 160, 251, 0.1) 0%,
-    rgba(99, 179, 237, 0.05) 100%);
+    rgba(24, 160, 251, 0.08) 0%,
+    rgba(99, 179, 237, 0.03) 100%);
+  position: relative;
+}
+
+.modal-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%);
 }
 
 .modal-title-section {
@@ -680,23 +747,38 @@ function getLastMailTime(address: EmailAddress): string {
 }
 
 .modal-form {
-  padding: 24px;
+  padding: 28px;
 }
 
 .form-item {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-input,
 .form-select {
-  border-radius: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  border-color: var(--n-primary-color);
+  box-shadow: 0 0 0 2px rgba(24, 160, 251, 0.2);
 }
 
 [data-theme="dark"] .form-input,
 [data-theme="dark"] .form-select {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .dice-button {
