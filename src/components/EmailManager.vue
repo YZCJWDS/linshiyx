@@ -350,12 +350,12 @@ function formatDate(dateString: string) {
 
 // 获取邮箱的最近一次邮件时间
 function getLastMailTime(address: EmailAddress): string {
-  // 获取该邮箱的所有邮件
+  // 获取该邮箱的所有邮件 - 修复：直接比较 mail.address
   const addressMails = emailStore.mails.filter(mail =>
-    mail.to && mail.to.some(recipient =>
-      recipient.address === address.address
-    )
+    mail.address === address.address
   )
+
+  console.log(`📧 Found ${addressMails.length} mails for address: ${address.address}`)
 
   if (addressMails.length === 0) {
     return '暂无邮件'
@@ -368,6 +368,7 @@ function getLastMailTime(address: EmailAddress): string {
     return currentTime > latestTime ? current : latest
   })
 
+  console.log(`📅 Latest mail for ${address.address}: ${latestMail.created_at}`)
   return formatDate(latestMail.created_at)
 }
 </script>
