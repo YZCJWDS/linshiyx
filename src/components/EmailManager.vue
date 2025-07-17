@@ -20,7 +20,7 @@
         <n-button
           type="primary"
           size="small"
-          @click="showCreateModal = true"
+          @click="handleShowCreateModal"
           :loading="loading.creating"
         >
           <template #icon>
@@ -150,27 +150,30 @@
     <!-- Create Email Modal -->
     <n-modal
       v-model:show="showCreateModal"
+      preset="card"
+      title="✨ 创建临时邮箱"
       :style="modalStyle"
       :bordered="false"
+      :segmented="true"
       class="create-email-modal"
-      :mask-closable="false"
+      :mask-closable="true"
       transform-origin="center"
     >
       <!-- 弹窗背景图片层 -->
-      <div class="modal-backdrop">
+      <div v-if="showCreateModal" class="modal-backdrop">
         <div class="modal-background-image"></div>
         <div class="modal-overlay"></div>
       </div>
 
       <!-- 弹窗内容 -->
-      <div class="modal-card">
+      <div class="modal-content-wrapper">
         <div class="modal-header">
           <div class="modal-title-section">
             <n-icon size="24" class="modal-icon">
               <MailIcon />
             </n-icon>
             <div class="modal-title-text">
-              <h3>✨ 创建临时邮箱</h3>
+              <h3>创建临时邮箱</h3>
               <p>快速生成一个新的临时邮箱地址</p>
             </div>
           </div>
@@ -319,6 +322,13 @@ const rules: FormRules = {
 // Generate random prefix
 function generateRandomPrefix() {
   form.name = generateRandomString(8)
+}
+
+// Handle show create modal with debug
+function handleShowCreateModal() {
+  console.log('🔘 Create modal button clicked')
+  showCreateModal.value = true
+  console.log('🔘 showCreateModal set to:', showCreateModal.value)
 }
 
 // Handle create email and close modal
@@ -612,19 +622,20 @@ function getLastMailTime(address: EmailAddress): string {
   border-top: 1px solid var(--n-border-color);
 }
 
-/* Create Email Modal Styles - 参考主页面背景处理 */
+/* Create Email Modal Styles */
 .create-email-modal {
   position: relative;
 }
 
-/* 弹窗背景层 - 类似主页面的背景处理 */
+/* 弹窗背景层 - 只在弹窗显示时出现 */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  pointer-events: none;
 }
 
 .modal-background-image {
@@ -637,9 +648,8 @@ function getLastMailTime(address: EmailAddress): string {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
   transform: scale(1.05);
-  z-index: -2;
+  z-index: 1001;
 }
 
 .modal-overlay {
@@ -657,7 +667,7 @@ function getLastMailTime(address: EmailAddress): string {
     rgba(255, 255, 255, 0.8) 100%
   );
   backdrop-filter: blur(3px);
-  z-index: -1;
+  z-index: 1002;
 }
 
 /* 深色模式下的背景遮罩 */
@@ -673,10 +683,10 @@ function getLastMailTime(address: EmailAddress): string {
   backdrop-filter: blur(4px);
 }
 
-/* 弹窗卡片 */
-.modal-card {
+/* 弹窗内容包装器 */
+.modal-content-wrapper {
   position: relative;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px) saturate(1.2);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -685,11 +695,11 @@ function getLastMailTime(address: EmailAddress): string {
     0 8px 16px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
   overflow: hidden;
-  z-index: 1;
+  z-index: 1003;
 }
 
-[data-theme="dark"] .modal-card {
-  background: rgba(0, 0, 0, 0.7);
+[data-theme="dark"] .modal-content-wrapper {
+  background: rgba(0, 0, 0, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.4),
