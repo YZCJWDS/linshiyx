@@ -660,8 +660,8 @@ function getLastMailTime(address: EmailAddress): string {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(4px) brightness(0.6);
-  transform: scale(1.1);
+  filter: blur(1.5px) brightness(0.75);
+  transform: scale(1.05);
   z-index: 1;
 }
 
@@ -673,11 +673,11 @@ function getLastMailTime(address: EmailAddress): string {
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.7) 25%,
-    rgba(255, 255, 255, 0.6) 50%,
-    rgba(255, 255, 255, 0.7) 75%,
-    rgba(255, 255, 255, 0.85) 100%
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 255, 255, 0.55) 25%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0.55) 75%,
+    rgba(255, 255, 255, 0.75) 100%
   );
   z-index: 2;
 }
@@ -686,11 +686,11 @@ function getLastMailTime(address: EmailAddress): string {
 [data-theme="dark"] .modal-overlay {
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.6) 25%,
-    rgba(0, 0, 0, 0.4) 50%,
-    rgba(0, 0, 0, 0.6) 75%,
-    rgba(0, 0, 0, 0.8) 100%
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.5) 25%,
+    rgba(0, 0, 0, 0.35) 50%,
+    rgba(0, 0, 0, 0.5) 75%,
+    rgba(0, 0, 0, 0.7) 100%
   );
 }
 
