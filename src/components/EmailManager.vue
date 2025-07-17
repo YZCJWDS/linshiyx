@@ -660,11 +660,11 @@ function getLastMailTime(address: EmailAddress): string {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(1.5px) brightness(0.75);
   transform: scale(1.05);
   z-index: 1;
 }
 
+/* 参考主界面的遮罩处理方式 */
 .modal-overlay {
   position: absolute;
   top: 0;
@@ -673,12 +673,13 @@ function getLastMailTime(address: EmailAddress): string {
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.75) 0%,
-    rgba(255, 255, 255, 0.55) 25%,
-    rgba(255, 255, 255, 0.45) 50%,
-    rgba(255, 255, 255, 0.55) 75%,
-    rgba(255, 255, 255, 0.75) 100%
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.5) 25%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.5) 75%,
+    rgba(255, 255, 255, 0.7) 100%
   );
+  backdrop-filter: blur(2px);
   z-index: 2;
 }
 
@@ -686,12 +687,13 @@ function getLastMailTime(address: EmailAddress): string {
 [data-theme="dark"] .modal-overlay {
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.5) 25%,
-    rgba(0, 0, 0, 0.35) 50%,
-    rgba(0, 0, 0, 0.5) 75%,
-    rgba(0, 0, 0, 0.7) 100%
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.4) 25%,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(0, 0, 0, 0.4) 75%,
+    rgba(0, 0, 0, 0.6) 100%
   );
+  backdrop-filter: blur(3px);
 }
 
 /* 弹窗内容包装器 */
