@@ -348,28 +348,31 @@ function formatDate(dateString: string) {
   return formatRelativeTime(dateString, uiStore.useUTCDate)
 }
 
-// 获取邮箱的最近一次邮件时间
+// 获取邮箱的显示时间（优先显示最近邮件时间，否则显示创建时间）
 function getLastMailTime(address: EmailAddress): string {
-  // 获取该邮箱的所有邮件 - 修复：直接比较 mail.address
-  const addressMails = emailStore.mails.filter(mail =>
-    mail.address === address.address
-  )
+  // 如果是当前选中的邮箱，尝试显示最近邮件时间
+  if (emailStore.selectedAddress?.address === address.address) {
+    const addressMails = emailStore.mails.filter(mail =>
+      mail.address === address.address
+    )
 
-  console.log(`📧 Found ${addressMails.length} mails for address: ${address.address}`)
+    console.log(`📧 Found ${addressMails.length} mails for selected address: ${address.address}`)
 
-  if (addressMails.length === 0) {
-    return '暂无邮件'
+    if (addressMails.length > 0) {
+      // 找到最新的邮件
+      const latestMail = addressMails.reduce((latest, current) => {
+        const latestTime = new Date(latest.created_at + ' UTC').getTime()
+        const currentTime = new Date(current.created_at + ' UTC').getTime()
+        return currentTime > latestTime ? current : latest
+      })
+
+      console.log(`📅 Latest mail for ${address.address}: ${latestMail.created_at}`)
+      return formatDate(latestMail.created_at)
+    }
   }
 
-  // 找到最新的邮件
-  const latestMail = addressMails.reduce((latest, current) => {
-    const latestTime = new Date(latest.created_at + ' UTC').getTime()
-    const currentTime = new Date(current.created_at + ' UTC').getTime()
-    return currentTime > latestTime ? current : latest
-  })
-
-  console.log(`📅 Latest mail for ${address.address}: ${latestMail.created_at}`)
-  return formatDate(latestMail.created_at)
+  // 对于非选中邮箱或没有邮件的邮箱，显示创建时间
+  return formatDate(address.created_at)
 }
 </script>
 
