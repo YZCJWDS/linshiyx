@@ -27,7 +27,7 @@ export function formatDate(dateString: string, useUTC = false): string {
   }).format(date)
 }
 
-// Format relative time (e.g., "2 minutes ago") - 参考示例前端的方法
+// 经典时间显示方法：2天内显示相对时间，超过2天显示准确日期
 export function formatRelativeTime(dateString: string, useUTCDate = false): string {
   if (!dateString) return 'Unknown time'
 
@@ -49,12 +49,12 @@ export function formatRelativeTime(dateString: string, useUTCDate = false): stri
       // 尝试直接解析原始字符串
       const fallbackDate = new Date(dateString)
       if (!isNaN(fallbackDate.getTime())) {
-        return formatTimeAgo(fallbackDate)
+        return formatClassicTime(fallbackDate)
       }
       return dateString // 返回原始字符串
     }
 
-    return formatTimeAgo(date)
+    return formatClassicTime(date)
 
   } catch (error) {
     console.error('Error parsing date:', dateString, error)
@@ -62,45 +62,99 @@ export function formatRelativeTime(dateString: string, useUTCDate = false): stri
   }
 }
 
-// 计算相对时间的辅助函数
-function formatTimeAgo(date: Date): string {
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+// 经典时间格式化：2天内相对时间，超过2天准确日期
+function formatClassicTime(date: Date): string {
+  // 强制使用中国时区
+  const chinaDate = new Date(date.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
+  const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
 
-  // 调试信息（可以在生产环境中移除）
-  console.log(`Time debug - Parsed: ${date.toISOString()}, Now: ${now.toISOString()}, Diff: ${diffInSeconds}s`)
+  const diffInMs = now.getTime() - chinaDate.getTime()
+  const diffInSeconds = Math.floor(diffInMs / 1000)
+  const diffInMinutes = Math.floor(diffInSeconds / 60)
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  const diffInDays = Math.floor(diffInHours / 24)
 
-  // 处理未来时间（可能的时区问题）
-  if (diffInSeconds < 0) {
-    const absDiff = Math.abs(diffInSeconds)
-    if (absDiff < 3600) { // 如果差异小于1小时，可能是时区问题
-      return 'Just now'
+  // 调试信息
+  console.log(`Time debug - China time: ${chinaDate.toLocaleString()}, Now: ${now.toLocaleString()}, Diff: ${diffInDays} days`)
+
+  // 处理未来时间
+  if (diffInMs < 0) {
+    const absDiffInMinutes = Math.abs(diffInMinutes)
+    if (absDiffInMinutes < 60) {
+      return '刚刚'
     }
   }
 
-  const absDiffInSeconds = Math.abs(diffInSeconds)
+  // 2天以内：显示相对时间
+  if (diffInDays < 2) {
+    const timeStr = chinaDate.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
 
-  if (absDiffInSeconds < 60) {
-    return 'Just now'
+    if (diffInMinutes < 1) {
+      return '刚刚'
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}分钟前`
+    } else if (diffInHours < 24) {
+      if (diffInHours < 1) {
+        return `${diffInMinutes}分钟前`
+      }
+      return `${diffInHours}小时前`
+    } else if (diffInDays === 0) {
+      // 今天
+      return `今天 ${timeStr}`
+    } else if (diffInDays === 1) {
+      // 昨天
+      return `昨天 ${timeStr}`
+    }
   }
 
-  const diffInMinutes = Math.floor(absDiffInSeconds / 60)
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`
-  }
+  // 超过2天：显示准确日期
+  return chinaDate.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).replace(/\//g, '-')
+}
 
-  const diffInHours = Math.floor(diffInMinutes / 60)
-  if (diffInHours < 24) {
-    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
-  }
+// 邮件详情专用：强制显示中国时区的完整日期时间
+export function formatMailDetailTime(dateString: string): string {
+  if (!dateString) return 'Unknown time'
 
-  const diffInDays = Math.floor(diffInHours / 24)
-  if (diffInDays < 30) {
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
-  }
+  try {
+    // 参考示例前端的处理方法：在时间字符串后添加 " UTC"
+    const utcTimeString = `${dateString} UTC`
+    const date = new Date(utcTimeString)
 
-  // 超过30天，显示具体日期
-  return date.toLocaleDateString()
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string:', dateString)
+      return dateString
+    }
+
+    // 强制使用中国时区显示完整日期时间
+    const chinaDate = new Date(date.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
+
+    return chinaDate.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Shanghai'
+    }).replace(/\//g, '-')
+
+  } catch (error) {
+    console.error('Error parsing mail detail date:', dateString, error)
+    return dateString
+  }
 }
 
 // Validate email address

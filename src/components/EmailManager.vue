@@ -98,7 +98,7 @@
                 </div>
                 <div class="email-meta">
                   <span class="email-name">{{ address.name }}</span>
-                  <span class="email-date">{{ formatDate(address.created_at) }}</span>
+                  <span class="email-date">{{ getLastMailTime(address) }}</span>
                 </div>
               </div>
               
@@ -346,6 +346,29 @@ function getUnreadCount(address: EmailAddress): number {
 // Format date for display
 function formatDate(dateString: string) {
   return formatRelativeTime(dateString, uiStore.useUTCDate)
+}
+
+// 获取邮箱的最近一次邮件时间
+function getLastMailTime(address: EmailAddress): string {
+  // 获取该邮箱的所有邮件
+  const addressMails = emailStore.mails.filter(mail =>
+    mail.to && mail.to.some(recipient =>
+      recipient.address === address.address
+    )
+  )
+
+  if (addressMails.length === 0) {
+    return '暂无邮件'
+  }
+
+  // 找到最新的邮件
+  const latestMail = addressMails.reduce((latest, current) => {
+    const latestTime = new Date(latest.created_at + ' UTC').getTime()
+    const currentTime = new Date(current.created_at + ' UTC').getTime()
+    return currentTime > latestTime ? current : latest
+  })
+
+  return formatDate(latestMail.created_at)
 }
 </script>
 

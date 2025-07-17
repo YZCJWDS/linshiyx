@@ -47,7 +47,7 @@
                 <TimeIcon />
               </n-icon>
               <span class="meta-label">日期:</span>
-              <span class="meta-value">{{ formatDate(emailStore.selectedMail.created_at) }}</span>
+              <span class="meta-value">{{ formatMailDetailTime(emailStore.selectedMail.created_at) }}</span>
             </div>
           </div>
         </div>
@@ -274,7 +274,7 @@ import {
   Attach as AttachIcon
 } from '@vicons/ionicons5'
 import { useEmailStore, useSettingsStore } from '@/stores'
-import { formatDate, copyToClipboard, extractTextFromHtml } from '@/utils/helpers'
+import { formatDate, formatMailDetailTime, copyToClipboard, extractTextFromHtml } from '@/utils/helpers'
 import { testDecoding } from '@/utils/mimeParser'
 import type { EmailAttachment } from '@/types'
 import ShadowHtmlComponent from './ShadowHtmlComponent.vue'
@@ -651,7 +651,7 @@ function downloadMail() {
   const content = `Subject: ${mail.subject || '(No Subject)'}
 From: ${mail.source}
 To: ${mail.address}
-Date: ${formatDate(mail.created_at)}
+Date: ${formatMailDetailTime(mail.created_at)}
 
 ${mail.message}`
 
