@@ -159,91 +159,81 @@
       :mask-closable="true"
       transform-origin="center"
     >
-      <!-- 弹窗卡片 - 包含背景图片 -->
-      <div class="modal-card-with-bg">
-        <!-- 弹窗背景图片层 - 只在卡片区域 -->
-        <div class="modal-card-background">
-          <div class="modal-background-image"></div>
-          <div class="modal-overlay"></div>
-        </div>
-
-        <!-- 弹窗内容 -->
-        <div class="modal-content-wrapper">
-          <div class="modal-header">
-            <div class="modal-title-section">
-              <n-icon size="24" class="modal-icon">
-                <MailIcon />
-              </n-icon>
-              <div class="modal-title-text">
-                <h3>创建临时邮箱</h3>
-                <p>快速生成一个新的临时邮箱地址</p>
-              </div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title-section">
+            <n-icon size="24" class="modal-icon">
+              <MailIcon />
+            </n-icon>
+            <div class="modal-title-text">
+              <h3>创建临时邮箱</h3>
+              <p>快速生成一个新的临时邮箱地址</p>
             </div>
           </div>
-
-          <n-form ref="formRef" :model="form" :rules="rules" size="large" class="modal-form">
-            <n-form-item path="name" label="邮箱前缀" class="form-item">
-              <n-input
-                v-model:value="form.name"
-                placeholder="输入前缀或留空随机生成"
-                :disabled="loading.creating"
-                size="large"
-                class="form-input"
-              >
-                <template #suffix>
-                  <n-button
-                    text
-                    size="medium"
-                    @click="generateRandomPrefix"
-                    :disabled="loading.creating"
-                    title="随机生成前缀"
-                    class="dice-button"
-                  >
-                    <n-icon size="18">
-                      <DiceIcon />
-                    </n-icon>
-                  </n-button>
-                </template>
-              </n-input>
-            </n-form-item>
-
-            <n-form-item path="domain" label="邮箱域名" class="form-item">
-              <n-select
-                v-model:value="form.domain"
-                :options="domainOptions"
-                placeholder="选择域名"
-                :disabled="loading.creating"
-                size="large"
-                class="form-select"
-              />
-            </n-form-item>
-
-            <div class="modal-actions">
-              <n-button
-                @click="showCreateModal = false"
-                :disabled="loading.creating"
-                size="large"
-                class="cancel-button"
-              >
-                取消
-              </n-button>
-              <n-button
-                type="primary"
-                :loading="loading.creating"
-                @click="handleCreateEmailAndClose"
-                size="large"
-                class="create-button"
-              >
-                <template #icon>
-                  <n-icon>
-                    <AddIcon />
-                  </n-icon>
-                </template>
-                生成邮箱
-              </n-button>
-            </div>
-          </n-form>
         </div>
+
+        <n-form ref="formRef" :model="form" :rules="rules" size="large" class="modal-form">
+          <n-form-item path="name" label="邮箱前缀" class="form-item">
+            <n-input
+              v-model:value="form.name"
+              placeholder="输入前缀或留空随机生成"
+              :disabled="loading.creating"
+              size="large"
+              class="form-input"
+            >
+              <template #suffix>
+                <n-button
+                  text
+                  size="medium"
+                  @click="generateRandomPrefix"
+                  :disabled="loading.creating"
+                  title="随机生成前缀"
+                  class="dice-button"
+                >
+                  <n-icon size="18">
+                    <DiceIcon />
+                  </n-icon>
+                </n-button>
+              </template>
+            </n-input>
+          </n-form-item>
+
+          <n-form-item path="domain" label="邮箱域名" class="form-item">
+            <n-select
+              v-model:value="form.domain"
+              :options="domainOptions"
+              placeholder="选择域名"
+              :disabled="loading.creating"
+              size="large"
+              class="form-select"
+            />
+          </n-form-item>
+
+          <div class="modal-actions">
+            <n-button
+              @click="showCreateModal = false"
+              :disabled="loading.creating"
+              size="large"
+              class="cancel-button"
+            >
+              取消
+            </n-button>
+            <n-button
+              type="primary"
+              :loading="loading.creating"
+              @click="handleCreateEmailAndClose"
+              size="large"
+              class="create-button"
+            >
+              <template #icon>
+                <n-icon>
+                  <AddIcon />
+                </n-icon>
+              </template>
+              生成邮箱
+            </n-button>
+          </div>
+        </n-form>
       </div>
     </n-modal>
   </div>
@@ -630,92 +620,24 @@ function getLastMailTime(address: EmailAddress): string {
   position: relative;
 }
 
-/* 弹窗卡片容器 - 包含背景图片 */
-.modal-card-with-bg {
-  position: relative;
+/* 弹窗内容 */
+.modal-content {
+  background: var(--n-card-color);
   border-radius: 16px;
   overflow: hidden;
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.15),
-    0 8px 16px rgba(0, 0, 0, 0.1);
-}
-
-/* 弹窗卡片背景层 - 只在卡片区域 */
-.modal-card-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-.modal-background-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('/nx.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transform: scale(1.05);
-  z-index: 1;
-}
-
-/* 参考主界面的遮罩处理方式 */
-.modal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.7) 0%,
-    rgba(255, 255, 255, 0.5) 25%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.5) 75%,
-    rgba(255, 255, 255, 0.7) 100%
-  );
-  backdrop-filter: blur(2px);
-  z-index: 2;
-}
-
-/* 深色模式下的背景遮罩 */
-[data-theme="dark"] .modal-overlay {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.4) 25%,
-    rgba(0, 0, 0, 0.2) 50%,
-    rgba(0, 0, 0, 0.4) 75%,
-    rgba(0, 0, 0, 0.6) 100%
-  );
-  backdrop-filter: blur(3px);
-}
-
-/* 弹窗内容包装器 */
-.modal-content-wrapper {
-  position: relative;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  z-index: 3;
-}
-
-[data-theme="dark"] .modal-content-wrapper {
-  background: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--n-border-color);
 }
 
 .modal-header {
-  padding: 28px 28px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--n-border-color);
   background: linear-gradient(135deg,
-    rgba(24, 160, 251, 0.08) 0%,
-    rgba(99, 179, 237, 0.03) 100%);
+    var(--n-primary-color-suppl) 0%,
+    rgba(24, 160, 251, 0.05) 100%);
   position: relative;
 }
 
@@ -728,8 +650,9 @@ function getLastMailTime(address: EmailAddress): string {
   height: 1px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.6) 50%,
+    var(--n-primary-color) 50%,
     transparent 100%);
+  opacity: 0.3;
 }
 
 .modal-title-section {
@@ -760,38 +683,22 @@ function getLastMailTime(address: EmailAddress): string {
 }
 
 .modal-form {
-  padding: 28px;
+  padding: 24px;
 }
 
 .form-item {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .form-input,
 .form-select {
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 .form-input:focus,
 .form-select:focus {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: var(--n-primary-color);
-  box-shadow: 0 0 0 2px rgba(24, 160, 251, 0.2);
-}
-
-[data-theme="dark"] .form-input,
-[data-theme="dark"] .form-select {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .form-input:focus,
-[data-theme="dark"] .form-select:focus {
-  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px var(--n-primary-color-suppl);
 }
 
 .dice-button {
@@ -808,31 +715,26 @@ function getLastMailTime(address: EmailAddress): string {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 32px;
+  margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--n-border-color);
 }
 
 .cancel-button {
   min-width: 80px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
 }
 
 .create-button {
   min-width: 120px;
   border-radius: 8px;
-  background: linear-gradient(135deg,
-    var(--n-primary-color) 0%,
-    var(--n-primary-color-hover) 100%);
-  box-shadow: 0 4px 12px rgba(24, 160, 251, 0.3);
+  box-shadow: 0 2px 8px var(--n-primary-color-suppl);
   transition: all 0.2s ease;
 }
 
 .create-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(24, 160, 251, 0.4);
+  box-shadow: 0 4px 12px var(--n-primary-color-suppl);
 }
 
 /* Responsive adjustments */
