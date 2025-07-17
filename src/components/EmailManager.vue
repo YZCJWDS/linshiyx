@@ -656,7 +656,7 @@ function getLastMailTime(address: EmailAddress): string {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/yll.png');
+  background-image: url('/nx.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
