@@ -45,39 +45,50 @@
     <!-- Main Content - Three Column Layout -->
     <main class="app-main">
       <div class="three-column-layout">
-        <!-- Column 1: Email Addresses (Same as inbox) -->
+        <!-- Column 1: Email Addresses -->
         <div class="column email-manager-column">
           <div class="column-header">
             <h2 class="column-title">发件邮箱</h2>
             <n-badge :value="emailStore.addresses.length" :max="99" type="info" />
           </div>
           <div class="column-content">
-            <SendMailAddressManager />
+            <SendMailAddressManager ref="addressManagerRef" />
           </div>
         </div>
 
-        <!-- Column 2: Sent Mails / Compose -->
+        <!-- Column 2: Sent Mails List -->
         <div class="column mail-list-column">
           <div class="column-header">
-            <h2 class="column-title">
-              {{ showCompose ? '撰写邮件' : '已发送' }}
-            </h2>
+            <h2 class="column-title">已发送</h2>
             <div class="header-actions">
               <n-button
-                v-if="!showCompose"
                 type="primary"
                 size="small"
                 @click="startCompose"
+                :disabled="!selectedFromAddress"
               >
                 <template #icon>
                   <n-icon>
                     <AddIcon />
                   </n-icon>
                 </template>
-                撰写邮件
+                发送新邮件
               </n-button>
+            </div>
+          </div>
+          <div class="column-content">
+            <SentMailList ref="sentMailListRef" />
+          </div>
+        </div>
+
+        <!-- Column 3: Mail Composer / Detail -->
+        <div class="column mail-detail-column">
+          <div class="column-header">
+            <h2 class="column-title">
+              {{ showCompose ? '撰写邮件' : (selectedSentMail ? '邮件详情' : '选择邮件或撰写新邮件') }}
+            </h2>
+            <div v-if="showCompose" class="header-actions">
               <n-button
-                v-else
                 size="small"
                 @click="cancelCompose"
               >
@@ -86,21 +97,13 @@
             </div>
           </div>
           <div class="column-content">
-            <SendMailComposer v-if="showCompose" @sent="handleMailSent" @cancel="cancelCompose" />
-            <SentMailList v-else />
-          </div>
-        </div>
-
-        <!-- Column 3: Mail Detail / Preview -->
-        <div class="column mail-detail-column">
-          <div class="column-header">
-            <h2 class="column-title">
-              {{ showCompose ? '邮件预览' : (selectedSentMail ? '邮件详情' : '选择邮件') }}
-            </h2>
-          </div>
-          <div class="column-content">
-            <SendMailPreview v-if="showCompose" />
-            <SentMailDetail v-else />
+            <SendMailComposer
+              v-if="showCompose"
+              :from-address="selectedFromAddress"
+              @sent="handleMailSent"
+              @cancel="cancelCompose"
+            />
+            <SentMailDetail v-else ref="sentMailDetailRef" />
           </div>
         </div>
       </div>
@@ -109,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import {
   NIcon,
   NButton,
@@ -137,8 +140,14 @@ defineEmits<{
 const emailStore = useEmailStore()
 const message = useMessage()
 
+// Refs
+const addressManagerRef = ref()
+const sentMailListRef = ref()
+const sentMailDetailRef = ref()
+
 // State
 const showCompose = ref(false)
+const selectedFromAddress = ref(null)
 const selectedSentMail = ref(null)
 const loading = ref({
   sentMails: false
@@ -146,8 +155,12 @@ const loading = ref({
 
 // Methods
 function startCompose() {
+  if (!selectedFromAddress.value) {
+    message.warning('请先选择一个发件邮箱')
+    return
+  }
   showCompose.value = true
-  console.log('📝 Starting mail composition')
+  console.log('📝 Starting mail composition from:', selectedFromAddress.value?.address)
 }
 
 function cancelCompose() {
@@ -176,8 +189,27 @@ async function refreshSentMails() {
   }
 }
 
+// 监听地址选择状态
+let addressCheckInterval: NodeJS.Timeout | null = null
+
 onMounted(() => {
   console.log('📧 Send mail app mounted')
+
+  // 监听地址管理器的选中状态
+  const checkSelectedAddress = () => {
+    if (addressManagerRef.value?.selectedFromAddress) {
+      selectedFromAddress.value = addressManagerRef.value.selectedFromAddress
+    }
+  }
+
+  // 定期检查选中状态
+  addressCheckInterval = setInterval(checkSelectedAddress, 100)
+})
+
+onUnmounted(() => {
+  if (addressCheckInterval) {
+    clearInterval(addressCheckInterval)
+  }
 })
 </script>
 
@@ -243,7 +275,7 @@ onMounted(() => {
 
 .three-column-layout {
   display: grid;
-  grid-template-columns: 320px 400px 1fr;
+  grid-template-columns: 300px 350px 1fr;
   gap: 16px;
   height: 100%;
   max-width: 100%;

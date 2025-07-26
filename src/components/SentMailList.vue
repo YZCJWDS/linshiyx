@@ -250,13 +250,21 @@ defineExpose({
 }
 
 .mail-item:hover {
-  background: rgba(24, 160, 88, 0.1);
-  border-color: rgba(24, 160, 88, 0.2);
+  background: rgba(147, 112, 219, 0.1);
+  border-color: rgba(147, 112, 219, 0.3);
+  transform: translateY(-1px);
 }
 
 .mail-item.selected {
-  background: rgba(24, 160, 88, 0.15);
-  border-color: rgba(24, 160, 88, 0.3);
+  background: linear-gradient(145deg,
+    rgba(147, 112, 219, 0.15) 0%,
+    rgba(138, 43, 226, 0.08) 100%);
+  border: 1px solid rgba(147, 112, 219, 0.4);
+  box-shadow:
+    inset 2px 2px 4px rgba(147, 112, 219, 0.2),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.1),
+    0 2px 8px rgba(147, 112, 219, 0.15);
+  transform: translateY(1px);
 }
 
 [data-theme="dark"] .mail-item {
@@ -264,11 +272,19 @@ defineExpose({
 }
 
 [data-theme="dark"] .mail-item:hover {
-  background: rgba(24, 160, 88, 0.15);
+  background: rgba(147, 112, 219, 0.15);
+  border-color: rgba(147, 112, 219, 0.4);
 }
 
 [data-theme="dark"] .mail-item.selected {
-  background: rgba(24, 160, 88, 0.2);
+  background: linear-gradient(145deg,
+    rgba(147, 112, 219, 0.2) 0%,
+    rgba(138, 43, 226, 0.12) 100%);
+  border: 1px solid rgba(147, 112, 219, 0.5);
+  box-shadow:
+    inset 2px 2px 4px rgba(147, 112, 219, 0.3),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(147, 112, 219, 0.2);
 }
 
 .mail-info {

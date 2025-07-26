@@ -3,38 +3,21 @@
     <n-scrollbar class="composer-content">
       <div class="composer-form">
         <n-form ref="formRef" :model="mailForm" :rules="rules" size="large">
-          <!-- From Address -->
-          <n-form-item path="fromMail" label="发件人">
-            <n-input-group>
-              <n-input
-                v-model:value="mailForm.fromName"
-                placeholder="发件人姓名（可选）"
-                style="width: 40%"
-              />
-              <n-select
-                v-model:value="mailForm.fromMail"
-                :options="fromAddressOptions"
-                placeholder="选择发件邮箱"
-                style="width: 60%"
-                filterable
-              />
-            </n-input-group>
+          <!-- From Address (Display Only) -->
+          <n-form-item label="发件人">
+            <n-input
+              :value="fromAddress?.address || '请先选择发件邮箱'"
+              readonly
+              placeholder="发件邮箱"
+            />
           </n-form-item>
 
           <!-- To Address -->
           <n-form-item path="toMail" label="收件人">
-            <n-input-group>
-              <n-input
-                v-model:value="mailForm.toName"
-                placeholder="收件人姓名（可选）"
-                style="width: 40%"
-              />
-              <n-input
-                v-model:value="mailForm.toMail"
-                placeholder="收件人邮箱地址"
-                style="width: 60%"
-              />
-            </n-input-group>
+            <n-input
+              v-model:value="mailForm.toMail"
+              placeholder="收件人邮箱地址"
+            />
           </n-form-item>
 
           <!-- Subject -->
@@ -123,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import {
   NScrollbar,
   NForm,
@@ -148,6 +131,11 @@ import { useEmailStore } from '@/stores'
 import { mailApi } from '@/utils/api'
 import type { SendMailRequest } from '@/types'
 
+// Define props
+const props = defineProps<{
+  fromAddress?: { address: string } | null
+}>()
+
 // Define emits
 const emit = defineEmits<{
   sent: []
@@ -164,9 +152,6 @@ const showPreview = ref(false)
 
 // Form data - 完全按照示例前端的格式
 const mailForm = reactive({
-  fromName: '',
-  fromMail: '',
-  toName: '',
   toMail: '',
   subject: '',
   contentType: 'text' as 'text' | 'html' | 'rich',
@@ -174,24 +159,18 @@ const mailForm = reactive({
 })
 
 // Computed
-const fromAddressOptions = computed(() => 
-  emailStore.addresses.map(addr => ({
-    label: addr.address,
-    value: addr.address
-  }))
-)
+const fromAddress = computed(() => props.fromAddress)
+
+
 
 // Form validation rules
 const rules: FormRules = {
-  fromMail: [
-    { required: true, message: '请选择发件邮箱', trigger: 'change' }
-  ],
   toMail: [
     { required: true, message: '请输入收件人邮箱', trigger: 'blur' },
-    { 
-      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 
-      message: '请输入有效的邮箱地址', 
-      trigger: 'blur' 
+    {
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: '请输入有效的邮箱地址',
+      trigger: 'blur'
     }
   ],
   subject: [
@@ -210,17 +189,23 @@ function togglePreview() {
 async function handleSendMail() {
   if (!formRef.value) return
 
+  // 检查是否选择了发件邮箱
+  if (!fromAddress.value?.address) {
+    message.error('请先选择发件邮箱')
+    return
+  }
+
   try {
     await formRef.value.validate()
-    
+
     sending.value = true
     console.log('📧 Sending mail with data:', mailForm)
 
     // 构建发送数据，完全按照示例前端的格式
     const sendData: SendMailRequest = {
-      from_name: mailForm.fromName || '',
-      from_mail: mailForm.fromMail,
-      to_name: mailForm.toName || '',
+      from_name: '',
+      from_mail: fromAddress.value.address,
+      to_name: '',
       to_mail: mailForm.toMail,
       subject: mailForm.subject,
       is_html: mailForm.contentType !== 'text',
@@ -232,9 +217,6 @@ async function handleSendMail() {
 
     // 重置表单
     Object.assign(mailForm, {
-      fromName: '',
-      fromMail: '',
-      toName: '',
       toMail: '',
       subject: '',
       contentType: 'text',
@@ -243,7 +225,7 @@ async function handleSendMail() {
 
     // 通知父组件
     emit('sent')
-    
+
     console.log('✅ Mail sent successfully')
   } catch (error) {
     console.error('Failed to send mail:', error)
@@ -253,17 +235,7 @@ async function handleSendMail() {
   }
 }
 
-// Watch for address changes
-watch(() => emailStore.addresses, (addresses) => {
-  if (addresses.length > 0 && !mailForm.fromMail) {
-    mailForm.fromMail = addresses[0].address
-  }
-}, { immediate: true })
 
-// Auto-select first address if available
-if (emailStore.addresses.length > 0) {
-  mailForm.fromMail = emailStore.addresses[0].address
-}
 </script>
 
 <style scoped>
