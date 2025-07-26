@@ -86,13 +86,14 @@
 
     <!-- Action Buttons -->
     <div class="composer-actions">
-      <n-button @click="$emit('cancel')">
+      <n-button @click="emit('cancel')">
         取消
       </n-button>
       <n-button
         type="primary"
         @click="handleSendMail"
         :loading="sending"
+        :disabled="!fromAddress?.address"
       >
         <template #icon>
           <n-icon>
