@@ -1,5 +1,10 @@
 <template>
   <div class="send-mail-composer">
+    <!-- 调试信息 -->
+    <div style="background: red; color: white; padding: 8px; text-align: center; font-weight: bold;">
+      📧 SendMailComposer 组件已加载 - 发送按钮应该在底部！
+    </div>
+
     <n-scrollbar class="composer-content">
       <div class="composer-form">
         <n-form ref="formRef" :model="mailForm" :rules="rules" size="large">
@@ -84,31 +89,35 @@
       </div>
     </n-scrollbar>
 
-    <!-- Action Buttons -->
+    <!-- Action Buttons - 固定在底部 -->
     <div class="composer-actions">
-      <n-text depth="3" style="margin-right: auto;">
-        {{ fromAddress?.address ? `从 ${fromAddress.address} 发送` : '请先选择发件邮箱' }}
-      </n-text>
+      <div class="action-left">
+        <n-text depth="3">
+          {{ fromAddress?.address ? `从 ${fromAddress.address} 发送` : '请先选择发件邮箱' }}
+        </n-text>
+      </div>
 
-      <n-button @click="emit('cancel')" size="large">
-        取消
-      </n-button>
+      <div class="action-buttons">
+        <n-button @click="emit('cancel')" size="large">
+          取消
+        </n-button>
 
-      <n-button
-        type="primary"
-        size="large"
-        @click="handleSendMail"
-        :loading="sending"
-        :disabled="!fromAddress?.address"
-        class="send-button"
-      >
-        <template #icon>
-          <n-icon>
-            <SendIcon />
-          </n-icon>
-        </template>
-        {{ sending ? '发送中...' : '发送邮件' }}
-      </n-button>
+        <n-button
+          type="primary"
+          size="large"
+          @click="handleSendMail"
+          :loading="sending"
+          :disabled="!fromAddress?.address"
+          class="send-button"
+        >
+          <template #icon>
+            <n-icon>
+              <SendIcon />
+            </n-icon>
+          </template>
+          {{ sending ? '发送中...' : '🚀 发送邮件' }}
+        </n-button>
+      </div>
     </div>
   </div>
 </template>
@@ -256,6 +265,8 @@ async function handleSendMail() {
 .composer-content {
   flex: 1;
   padding: 16px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .composer-form {
@@ -279,19 +290,35 @@ async function handleSendMail() {
 
 .composer-actions {
   padding: 16px;
-  border-top: 1px solid var(--n-border-color);
+  border-top: 3px solid #ff0000;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.5);
+  background: #ffff00;
   backdrop-filter: blur(10px);
-  position: relative;
-  z-index: 10;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
   flex-shrink: 0;
+  min-height: 60px;
+  border: 3px solid #ff0000;
 }
 
 [data-theme="dark"] .composer-actions {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.action-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 /* 发送按钮特殊样式 */
