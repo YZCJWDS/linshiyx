@@ -434,6 +434,42 @@ export const mailApi = {
       throw error
     }
   },
+
+  // Send mail by admin - 按照示例前端的管理员发送方式
+  async sendByAdmin(data: SendMailRequest): Promise<void> {
+    try {
+      console.log('Sending mail by admin:', data)
+
+      // 完全按照示例前端的管理员调用方式
+      // 从示例前端: await W.fetch("/admin/send_mail", { method: "POST", body: JSON.stringify({ from_name, from_mail, to_name, to_mail, subject, is_html, content }) })
+      const response = await fetch('https://apimail.yzcjwds.xyz/admin/send_mail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-auth': authState.adminAuth || localStorage.getItem('adminAuth') || ''
+        },
+        body: JSON.stringify({
+          from_name: data.from_name || '',
+          from_mail: data.from_mail || '',
+          to_name: data.to_name,
+          to_mail: data.to_mail,
+          subject: data.subject,
+          is_html: data.is_html,
+          content: data.content
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`发送失败: ${response.status} ${errorText}`)
+      }
+
+      console.log('Mail sent successfully by admin')
+    } catch (error) {
+      console.error('Failed to send mail by admin:', error)
+      throw error
+    }
+  },
 }
 
 // User Settings API - 完全按照参考前端的调用方式

@@ -53,6 +53,19 @@
           <n-button
             quaternary
             circle
+            @click="showSendMailInterface"
+            title="发送邮件"
+          >
+            <template #icon>
+              <n-icon>
+                <SendIcon />
+              </n-icon>
+            </template>
+          </n-button>
+
+          <n-button
+            quaternary
+            circle
             @click="handleLogout"
             title="退出登录"
             type="error"
@@ -69,7 +82,8 @@
 
     <!-- Main Content - Three Column Layout -->
     <main class="app-main">
-      <div class="three-column-layout">
+      <!-- 收件箱界面 -->
+      <div v-if="!showSendMail" class="three-column-layout">
         <!-- Column 1: Email Manager -->
         <div class="column email-manager-column">
           <div class="column-header">
@@ -87,11 +101,11 @@
             <h2 class="column-title">
               {{ emailStore.selectedAddress ? '收件箱' : '选择邮箱地址' }}
             </h2>
-            <n-badge 
-              v-if="emailStore.selectedAddress" 
-              :value="emailStore.selectedAddressMails.length" 
-              :max="99" 
-              type="success" 
+            <n-badge
+              v-if="emailStore.selectedAddress"
+              :value="emailStore.selectedAddressMails.length"
+              :max="99"
+              type="success"
             />
           </div>
           <div class="column-content">
@@ -111,6 +125,9 @@
           </div>
         </div>
       </div>
+
+      <!-- 发送邮件界面 -->
+      <SendMailApp v-else @back="showSendMail = false" />
     </main>
 
     <!-- Global Loading Overlay -->
@@ -138,13 +155,15 @@ import {
   Sunny as SunIcon,
   Moon as MoonIcon,
   Refresh as RefreshIcon,
-  LogOut as LogOutIcon
+  LogOut as LogOutIcon,
+  Send as SendIcon
 } from '@vicons/ionicons5'
 import { useEmailStore, useUiStore, useAuthStore } from '@/stores'
 import { useKeyboard, commonShortcuts } from '@/composables/useKeyboard'
 import EmailManager from './EmailManager.vue'
 import MailList from './MailList.vue'
 import MailDetail from './MailDetail.vue'
+import SendMailApp from './SendMailApp.vue'
 
 const emailStore = useEmailStore()
 const uiStore = useUiStore()
@@ -154,6 +173,9 @@ const message = useMessage()
 // 背景图片状态
 const backgroundLoaded = ref(false)
 const backgroundError = ref(false)
+
+// 界面状态管理
+const showSendMail = ref(false)
 
 // 检查背景图片加载状态
 function checkBackgroundImage() {
@@ -235,6 +257,12 @@ async function handleLogout() {
     console.error('Logout error:', error)
     message.error('退出登录失败')
   }
+}
+
+// 显示发送邮件界面
+function showSendMailInterface() {
+  showSendMail.value = true
+  console.log('📧 Opening send mail interface')
 }
 
 // Setup keyboard shortcuts

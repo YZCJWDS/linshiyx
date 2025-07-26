@@ -157,3 +157,14 @@ build/
 
 # Reference frontend (keep local but don't commit)
 frontend/
+
+# Image files (keep local but don't commit)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+left.png
+right.png
+preview.jpg
+yll.png
