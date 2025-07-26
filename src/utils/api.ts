@@ -435,38 +435,47 @@ export const mailApi = {
     }
   },
 
-  // Send mail by admin - 按照示例前端的管理员发送方式
-  async sendByAdmin(data: SendMailRequest): Promise<void> {
+  // Send mail by user - 按照示例前端的用户发送方式
+  async sendByUser(data: SendMailRequest): Promise<void> {
     try {
-      console.log('Sending mail by admin:', data)
+      console.log('Sending mail by user:', data)
 
-      // 完全按照示例前端的管理员调用方式
-      // 从示例前端: await W.fetch("/admin/send_mail", { method: "POST", body: JSON.stringify({ from_name, from_mail, to_name, to_mail, subject, is_html, content }) })
-      const response = await fetch('https://apimail.yzcjwds.xyz/admin/send_mail', {
+      // 完全按照示例前端的用户调用方式
+      // 从示例前端: await p.fetch("/api/send_mail", { method: "POST", body: JSON.stringify({ from_name, to_name, to_mail, subject, is_html, content }) })
+      await apiFetch<void>('/api/send_mail', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-auth': authState.adminAuth || localStorage.getItem('adminAuth') || ''
-        },
-        body: JSON.stringify({
+        data: {
           from_name: data.from_name || '',
-          from_mail: data.from_mail || '',
-          to_name: data.to_name,
+          to_name: data.to_name || '',
           to_mail: data.to_mail,
           subject: data.subject,
           is_html: data.is_html,
           content: data.content
-        })
+        }
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`发送失败: ${response.status} ${errorText}`)
-      }
-
-      console.log('Mail sent successfully by admin')
+      console.log('Mail sent successfully by user')
     } catch (error) {
-      console.error('Failed to send mail by admin:', error)
+      console.error('Failed to send mail by user:', error)
+      throw error
+    }
+  },
+
+  // Request send mail access - 申请发送邮件权限
+  async requestSendAccess(): Promise<void> {
+    try {
+      console.log('Requesting send mail access')
+
+      // 完全按照示例前端的申请权限方式
+      // 从示例前端: await p.fetch("/api/requset_send_mail_access", { method: "POST", body: JSON.stringify({}) })
+      await apiFetch<void>('/api/requset_send_mail_access', {
+        method: 'POST',
+        data: {}
+      })
+
+      console.log('Send mail access requested successfully')
+    } catch (error) {
+      console.error('Failed to request send mail access:', error)
       throw error
     }
   },

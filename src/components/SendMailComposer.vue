@@ -1,10 +1,5 @@
 <template>
   <div class="send-mail-composer">
-    <!-- 调试信息 -->
-    <div style="background: red; color: white; padding: 8px; text-align: center; font-weight: bold;">
-      📧 SendMailComposer 组件已加载 - 发送按钮应该在底部！
-    </div>
-
     <n-scrollbar class="composer-content">
       <div class="composer-form">
         <n-form ref="formRef" :model="mailForm" :rules="rules" size="large">
@@ -229,8 +224,8 @@ async function handleSendMail() {
       content: mailForm.content
     }
 
-    // 使用管理员API发送邮件，完全按照示例前端的调用方式
-    await mailApi.sendByAdmin(sendData)
+    // 使用用户API发送邮件，完全按照示例前端的调用方式
+    await mailApi.sendByUser(sendData)
 
     // 重置表单
     Object.assign(mailForm, {
@@ -260,6 +255,7 @@ async function handleSendMail() {
   height: 100%;
   display: flex;
   flex-direction: column;
+  max-height: 100%;
 }
 
 .composer-content {
@@ -267,6 +263,7 @@ async function handleSendMail() {
   padding: 16px;
   overflow-y: auto;
   min-height: 0;
+  max-height: calc(100% - 80px);
 }
 
 .composer-form {
@@ -290,19 +287,18 @@ async function handleSendMail() {
 
 .composer-actions {
   padding: 16px;
-  border-top: 3px solid #ff0000;
+  border-top: 1px solid var(--n-border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  background: #ffff00;
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  position: sticky;
-  bottom: 0;
+  position: relative;
   z-index: 100;
   flex-shrink: 0;
   min-height: 60px;
-  border: 3px solid #ff0000;
+  height: 60px;
 }
 
 [data-theme="dark"] .composer-actions {
