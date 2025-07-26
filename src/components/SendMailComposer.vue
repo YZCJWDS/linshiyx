@@ -86,21 +86,28 @@
 
     <!-- Action Buttons -->
     <div class="composer-actions">
-      <n-button @click="emit('cancel')">
+      <n-text depth="3" style="margin-right: auto;">
+        {{ fromAddress?.address ? `从 ${fromAddress.address} 发送` : '请先选择发件邮箱' }}
+      </n-text>
+
+      <n-button @click="emit('cancel')" size="large">
         取消
       </n-button>
+
       <n-button
         type="primary"
+        size="large"
         @click="handleSendMail"
         :loading="sending"
         :disabled="!fromAddress?.address"
+        class="send-button"
       >
         <template #icon>
           <n-icon>
             <SendIcon />
           </n-icon>
         </template>
-        发送邮件
+        {{ sending ? '发送中...' : '发送邮件' }}
       </n-button>
     </div>
   </div>
@@ -278,10 +285,30 @@ async function handleSendMail() {
   gap: 12px;
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .composer-actions {
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* 发送按钮特殊样式 */
+.send-button {
+  min-width: 120px;
+  font-weight: 600;
+}
+
+.send-button:not(:disabled) {
+  background: linear-gradient(135deg, #18a058 0%, #36ad6a 100%);
+  box-shadow: 0 4px 12px rgba(24, 160, 88, 0.3);
+}
+
+.send-button:not(:disabled):hover {
+  background: linear-gradient(135deg, #16a085 0%, #27ae60 100%);
+  box-shadow: 0 6px 16px rgba(24, 160, 88, 0.4);
+  transform: translateY(-1px);
 }
 
 /* Form styling */
