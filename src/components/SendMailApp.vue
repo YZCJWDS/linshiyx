@@ -62,20 +62,6 @@
             <h2 class="column-title">已发送</h2>
             <div class="header-actions">
               <n-button
-                size="small"
-                @click="requestSendAccess"
-                :loading="loading.requestAccess"
-                title="申请发送邮件权限"
-              >
-                <template #icon>
-                  <n-icon>
-                    <KeyIcon />
-                  </n-icon>
-                </template>
-                申请权限
-              </n-button>
-
-              <n-button
                 type="primary"
                 size="small"
                 @click="startCompose"
@@ -111,13 +97,6 @@
             </div>
           </div>
           <div class="column-content">
-            <!-- 调试信息 -->
-            <div style="background: #f0f0f0; padding: 8px; margin: 8px; border-radius: 4px; font-size: 12px;">
-              <div>showCompose: {{ showCompose }}</div>
-              <div>selectedFromAddress: {{ selectedFromAddress?.address || 'null' }}</div>
-              <div>addressManagerRef: {{ !!addressManagerRef }}</div>
-            </div>
-
             <SendMailComposer
               v-if="showCompose"
               :from-address="selectedFromAddress"
@@ -144,11 +123,9 @@ import {
   ArrowBack as ArrowBackIcon,
   Send as SendIcon,
   Refresh as RefreshIcon,
-  Add as AddIcon,
-  Key as KeyIcon
+  Add as AddIcon
 } from '@vicons/ionicons5'
 import { useEmailStore } from '@/stores'
-import { mailApi } from '@/utils/api'
 import SendMailAddressManager from './SendMailAddressManager.vue'
 import SendMailComposer from './SendMailComposer.vue'
 import SentMailList from './SentMailList.vue'
@@ -173,8 +150,7 @@ const showCompose = ref(false)
 const selectedFromAddress = ref(null)
 const selectedSentMail = ref(null)
 const loading = ref({
-  sentMails: false,
-  requestAccess: false
+  sentMails: false
 })
 
 // Methods
@@ -197,20 +173,6 @@ function handleMailSent() {
   message.success('邮件发送成功！')
   refreshSentMails()
   console.log('✅ Mail sent successfully')
-}
-
-async function requestSendAccess() {
-  loading.value.requestAccess = true
-  try {
-    await mailApi.requestSendAccess()
-    message.success('发送权限申请成功！请等待管理员审核。')
-    console.log('🔑 Send access requested successfully')
-  } catch (error) {
-    console.error('Failed to request send access:', error)
-    message.error('申请发送权限失败')
-  } finally {
-    loading.value.requestAccess = false
-  }
 }
 
 async function refreshSentMails() {
