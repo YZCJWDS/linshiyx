@@ -111,6 +111,13 @@
             </div>
           </div>
           <div class="column-content">
+            <!-- 调试信息 -->
+            <div style="background: #f0f0f0; padding: 8px; margin: 8px; border-radius: 4px; font-size: 12px;">
+              <div>showCompose: {{ showCompose }}</div>
+              <div>selectedFromAddress: {{ selectedFromAddress?.address || 'null' }}</div>
+              <div>addressManagerRef: {{ !!addressManagerRef }}</div>
+            </div>
+
             <SendMailComposer
               v-if="showCompose"
               :from-address="selectedFromAddress"

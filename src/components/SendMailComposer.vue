@@ -1,5 +1,10 @@
 <template>
   <div class="send-mail-composer">
+    <!-- 调试信息 -->
+    <div style="background: #ff9999; color: white; padding: 8px; text-align: center; font-weight: bold;">
+      🚀 SendMailComposer 已渲染！发送按钮在底部！
+    </div>
+
     <n-scrollbar class="composer-content">
       <div class="composer-form">
         <n-form ref="formRef" :model="mailForm" :rules="rules" size="large">
@@ -85,9 +90,9 @@
     </n-scrollbar>
 
     <!-- Action Buttons - 固定在底部 -->
-    <div class="composer-actions">
+    <div class="composer-actions" style="background: #00ff00 !important; border: 3px solid #ff0000 !important;">
       <div class="action-left">
-        <n-text depth="3">
+        <n-text depth="3" style="color: #000 !important; font-weight: bold;">
           {{ fromAddress?.address ? `从 ${fromAddress.address} 发送` : '请先选择发件邮箱' }}
         </n-text>
       </div>
@@ -104,13 +109,14 @@
           :loading="sending"
           :disabled="!fromAddress?.address"
           class="send-button"
+          style="background: #ff6600 !important; color: white !important; font-size: 16px !important; font-weight: bold !important;"
         >
           <template #icon>
             <n-icon>
               <SendIcon />
             </n-icon>
           </template>
-          {{ sending ? '发送中...' : '🚀 发送邮件' }}
+          {{ sending ? '发送中...' : '🚀🚀🚀 发送邮件 🚀🚀🚀' }}
         </n-button>
       </div>
     </div>
