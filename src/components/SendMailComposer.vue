@@ -111,7 +111,7 @@ import {
   Send as SendIcon
 } from '@vicons/ionicons5'
 import { useEmailStore } from '@/stores'
-import { mailApi } from '@/utils/api'
+import { mailApi, emailRecordSaver } from '@/utils/api'
 import type { SendMailRequest } from '@/types'
 
 // Define props
@@ -197,6 +197,25 @@ async function handleSendMail() {
 
     // 使用管理员API发送邮件，完全按照示例前端的调用方式
     await mailApi.sendByAdmin(sendData)
+
+    // 邮件发送成功后，保存记录到本地
+    try {
+      const mailRecord = {
+        from_mail: fromAddress.value.address,
+        to_mail: mailForm.toMail,
+        subject: mailForm.subject,
+        content: mailForm.content,
+        is_html: mailForm.contentType !== 'text',
+        sent_at: new Date().toISOString()
+      }
+
+      await emailRecordSaver.saveMailRecord(mailRecord)
+      console.log('✅ Mail record saved successfully')
+    } catch (saveError) {
+      console.error('❌ Failed to save mail record:', saveError)
+      // 保存失败不影响邮件发送成功的提示
+      message.warning('邮件发送成功，但保存记录失败')
+    }
 
     // 重置表单
     Object.assign(mailForm, {

@@ -1,9 +1,34 @@
 <template>
   <div class="sent-mail-list">
     <n-scrollbar class="mail-list">
+      <!-- Local Storage Info -->
+      <div class="local-storage-info">
+        <n-card size="small" embedded>
+          <template #header>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <n-icon size="20" color="#18a058">
+                <FolderIcon />
+              </n-icon>
+              <span>本地记录存储</span>
+            </div>
+          </template>
+
+          <n-space vertical size="small">
+            <n-text depth="2">
+              📁 每次发送邮件后，完整记录会自动保存到您选择的本地文件夹
+            </n-text>
+            <n-text depth="3" style="font-size: 12px;">
+              • 首次发送时会提示选择保存位置<br>
+              • 记录包含发送时间、收发件人、主题和完整内容<br>
+              • 文件格式为JSON，可用任何文本编辑器查看
+            </n-text>
+          </n-space>
+        </n-card>
+      </div>
+
       <!-- Empty State -->
       <div v-if="sentMails.length === 0" class="empty-state">
-        <n-empty description="暂无已发送邮件">
+        <n-empty description="已发送邮件记录保存在本地文件中">
           <template #icon>
             <n-icon size="48">
               <MailIcon />
@@ -11,7 +36,7 @@
           </template>
           <template #extra>
             <n-text depth="3">
-              点击"撰写邮件"开始发送您的第一封邮件
+              点击"发送新邮件"开始发送，记录将自动保存到本地
             </n-text>
           </template>
         </n-empty>
@@ -121,13 +146,16 @@ import {
   NTag,
   NButton,
   NPopconfirm,
+  NCard,
+  NSpace,
   useMessage
 } from 'naive-ui'
 import {
   Mail as MailIcon,
   ArrowForward as ArrowForwardIcon,
   Refresh as RefreshIcon,
-  Trash as DeleteIcon
+  Trash as DeleteIcon,
+  Folder as FolderIcon
 } from '@vicons/ionicons5'
 import { formatRelativeTime } from '@/utils/helpers'
 import { useUiStore } from '@/stores'
@@ -224,6 +252,19 @@ defineExpose({
 .mail-list {
   flex: 1;
   padding: 8px;
+}
+
+.local-storage-info {
+  margin: 8px;
+  margin-bottom: 16px;
+}
+
+.local-storage-info :deep(.n-card-header) {
+  padding: 12px 16px;
+}
+
+.local-storage-info :deep(.n-card__content) {
+  padding: 12px 16px;
 }
 
 .empty-state {

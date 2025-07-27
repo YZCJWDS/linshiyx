@@ -526,4 +526,201 @@ export const settingsApi = {
   }
 }
 
+// 邮件记录保存器
+class EmailRecordSaver {
+  private dirHandle: FileSystemDirectoryHandle | null = null
+  private readonly DIRECTORY_ID = 'linshiyx-email-records'
+  private isInitialized = false
+
+  // 检查浏览器支持
+  private isSupported(): boolean {
+    return 'showDirectoryPicker' in window
+  }
+
+  // 初始化存储位置（首次使用时调用）
+  async initialize(): Promise<boolean> {
+    if (!this.isSupported()) {
+      console.log('🔄 浏览器不支持 File System Access API，将使用下载模式')
+      return false
+    }
+
+    try {
+      this.dirHandle = await window.showDirectoryPicker({
+        id: this.DIRECTORY_ID,
+        startIn: 'desktop'
+      })
+      this.isInitialized = true
+      console.log('✅ 邮件记录存储位置已设置')
+      return true
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('🔄 用户取消选择文件夹，将使用下载模式')
+      } else {
+        console.error('❌ 初始化存储位置失败:', error)
+      }
+      return false
+    }
+  }
+
+  // 格式化邮件记录为可读格式
+  private formatMailRecord(mailData: {
+    from_mail: string
+    to_mail: string
+    subject: string
+    content: string
+    is_html: boolean
+    sent_at: string
+  }) {
+    const now = new Date()
+    const readableTime = now.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+
+    return {
+      "📧 邮件发送记录": {
+        "📅 发送时间": readableTime,
+        "👤 发件人": mailData.from_mail,
+        "📮 收件人": mailData.to_mail,
+        "📝 邮件主题": mailData.subject || '(无主题)',
+        "📄 内容格式": mailData.is_html ? 'HTML格式' : '纯文本格式',
+        "📊 内容长度": `${mailData.content.length} 字符`,
+        "✅ 发送状态": "成功"
+      },
+      "📋 邮件内容": {
+        "正文": mailData.content,
+        "原始格式": mailData.is_html ? 'HTML' : 'TEXT'
+      },
+      "🔧 技术信息": {
+        "记录ID": `mail_${Date.now()}`,
+        "时间戳": mailData.sent_at,
+        "保存时间": now.toISOString(),
+        "应用版本": "1.0.0"
+      }
+    }
+  }
+
+  // 生成文件名
+  private generateFileName(): string {
+    const now = new Date()
+    const timestamp = now.toISOString()
+      .replace(/[:.]/g, '-')
+      .replace('T', '_')
+      .slice(0, 19)
+    return `邮件记录_${timestamp}.json`
+  }
+
+  // 保存到指定文件夹
+  private async saveToDirectory(data: any, fileName: string): Promise<boolean> {
+    if (!this.dirHandle) {
+      return false
+    }
+
+    try {
+      // 验证目录权限
+      const permission = await this.dirHandle.queryPermission({ mode: 'readwrite' })
+      if (permission !== 'granted') {
+        const requestPermission = await this.dirHandle.requestPermission({ mode: 'readwrite' })
+        if (requestPermission !== 'granted') {
+          console.log('🔄 权限被拒绝，改用下载模式')
+          return false
+        }
+      }
+
+      // 创建并写入文件
+      const fileHandle = await this.dirHandle.getFileHandle(fileName, { create: true })
+      const writable = await fileHandle.createWritable()
+      await writable.write(JSON.stringify(data, null, 2))
+      await writable.close()
+
+      console.log(`✅ 邮件记录已保存到指定文件夹: ${fileName}`)
+      return true
+    } catch (error: any) {
+      console.error('❌ 保存到文件夹失败:', error)
+      return false
+    }
+  }
+
+  // 下载文件到默认下载位置
+  private downloadFile(data: any, fileName: string): void {
+    try {
+      const jsonString = JSON.stringify(data, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      link.style.display = 'none'
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // 清理URL对象
+      setTimeout(() => URL.revokeObjectURL(url), 100)
+
+      console.log(`✅ 邮件记录已下载: ${fileName}`)
+    } catch (error) {
+      console.error('❌ 下载文件失败:', error)
+      throw new Error('下载邮件记录失败')
+    }
+  }
+
+  // 主要的保存方法
+  async saveMailRecord(mailData: {
+    from_mail: string
+    to_mail: string
+    subject: string
+    content: string
+    is_html: boolean
+    sent_at: string
+  }): Promise<void> {
+    try {
+      // 格式化数据
+      const formattedData = this.formatMailRecord(mailData)
+      const fileName = this.generateFileName()
+
+      // 如果是首次使用，尝试初始化
+      if (!this.isInitialized && this.isSupported()) {
+        const initialized = await this.initialize()
+        if (!initialized) {
+          // 初始化失败，使用下载模式
+          this.downloadFile(formattedData, fileName)
+          return
+        }
+      }
+
+      // 尝试保存到指定文件夹
+      if (this.dirHandle) {
+        const saved = await this.saveToDirectory(formattedData, fileName)
+        if (saved) {
+          return
+        }
+      }
+
+      // 保存失败，使用下载模式
+      this.downloadFile(formattedData, fileName)
+    } catch (error) {
+      console.error('❌ 保存邮件记录时发生错误:', error)
+      // 即使出错也要尝试下载，确保记录不丢失
+      try {
+        const basicData = this.formatMailRecord(mailData)
+        this.downloadFile(basicData, this.generateFileName())
+      } catch (downloadError) {
+        console.error('❌ 下载备份也失败了:', downloadError)
+        throw new Error('保存邮件记录完全失败')
+      }
+    }
+  }
+}
+
+// 创建全局实例
+export const emailRecordSaver = new EmailRecordSaver()
+
 export { ApiError }
