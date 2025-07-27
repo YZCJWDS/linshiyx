@@ -84,36 +84,7 @@
       </div>
     </n-scrollbar>
 
-    <!-- Action Buttons - 固定在底部 -->
-    <div class="composer-actions">
-      <div class="action-left">
-        <n-text depth="3">
-          {{ fromAddress?.address ? `从 ${fromAddress.address} 发送` : '请先选择发件邮箱' }}
-        </n-text>
-      </div>
 
-      <div class="action-buttons">
-        <n-button @click="emit('cancel')" size="large">
-          取消
-        </n-button>
-
-        <n-button
-          type="primary"
-          size="large"
-          @click="handleSendMail"
-          :loading="sending"
-          :disabled="!fromAddress?.address"
-          class="send-button"
-        >
-          <template #icon>
-            <n-icon>
-              <SendIcon />
-            </n-icon>
-          </template>
-          {{ sending ? '发送中...' : '发送邮件' }}
-        </n-button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -247,7 +218,10 @@ async function handleSendMail() {
   }
 }
 
-
+// Expose methods for parent component
+defineExpose({
+  sendMail: handleSendMail
+})
 </script>
 
 <style scoped>
@@ -284,34 +258,7 @@ async function handleSendMail() {
   padding: 8px;
 }
 
-.composer-actions {
-  padding: 16px;
-  border-top: 1px solid var(--n-border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  flex-shrink: 0;
-  min-height: 60px;
-}
 
-[data-theme="dark"] .composer-actions {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.action-left {
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
 
 /* 发送按钮特殊样式 */
 .send-button {
@@ -349,15 +296,11 @@ async function handleSendMail() {
   .composer-content {
     padding: 12px;
   }
-  
-  .composer-actions {
-    padding: 12px;
-  }
-  
+
   :deep(.n-input-group .n-input:first-child) {
     width: 35% !important;
   }
-  
+
   :deep(.n-input-group .n-input:last-child),
   :deep(.n-input-group .n-select) {
     width: 65% !important;

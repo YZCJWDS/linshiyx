@@ -88,17 +88,37 @@
               {{ showCompose ? '撰写邮件' : (selectedSentMail ? '邮件详情' : '选择邮件或撰写新邮件') }}
             </h2>
             <div v-if="showCompose" class="header-actions">
+              <n-text depth="3" style="margin-right: 12px; font-size: 12px;">
+                {{ selectedFromAddress?.address ? `从 ${selectedFromAddress.address} 发送` : '请先选择发件邮箱' }}
+              </n-text>
+
               <n-button
                 size="small"
                 @click="cancelCompose"
               >
                 取消
               </n-button>
+
+              <n-button
+                type="primary"
+                size="small"
+                @click="handleSendMail"
+                :loading="sending"
+                :disabled="!selectedFromAddress?.address"
+              >
+                <template #icon>
+                  <n-icon>
+                    <SendIcon />
+                  </n-icon>
+                </template>
+                {{ sending ? '发送中...' : '发送邮件' }}
+              </n-button>
             </div>
           </div>
           <div class="column-content">
             <SendMailComposer
               v-if="showCompose"
+              ref="sendMailComposerRef"
               :from-address="selectedFromAddress"
               @sent="handleMailSent"
               @cancel="cancelCompose"
@@ -126,6 +146,8 @@ import {
   Add as AddIcon
 } from '@vicons/ionicons5'
 import { useEmailStore } from '@/stores'
+import { mailApi } from '@/utils/api'
+import type { SendMailRequest } from '@/types'
 import SendMailAddressManager from './SendMailAddressManager.vue'
 import SendMailComposer from './SendMailComposer.vue'
 import SentMailList from './SentMailList.vue'
@@ -144,6 +166,7 @@ const message = useMessage()
 const addressManagerRef = ref()
 const sentMailListRef = ref()
 const sentMailDetailRef = ref()
+const sendMailComposerRef = ref()
 
 // State
 const showCompose = ref(false)
@@ -152,6 +175,8 @@ const selectedSentMail = ref(null)
 const loading = ref({
   sentMails: false
 })
+
+const sending = ref(false)
 
 // Methods
 function startCompose() {
@@ -173,6 +198,25 @@ function handleMailSent() {
   message.success('邮件发送成功！')
   refreshSentMails()
   console.log('✅ Mail sent successfully')
+}
+
+async function handleSendMail() {
+  if (!selectedFromAddress.value?.address) {
+    message.error('请先选择发件邮箱')
+    return
+  }
+
+  if (!sendMailComposerRef.value) {
+    message.error('邮件编辑器未就绪')
+    return
+  }
+
+  // 调用SendMailComposer的发送方法
+  try {
+    await sendMailComposerRef.value.sendMail()
+  } catch (error) {
+    console.error('Failed to send mail from parent:', error)
+  }
 }
 
 async function refreshSentMails() {
