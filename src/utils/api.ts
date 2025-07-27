@@ -440,15 +440,11 @@ export const mailApi = {
     try {
       console.log('Sending mail by admin:', data)
 
-      // 完全按照示例前端的管理员调用方式
+      // 完全按照示例前端的管理员调用方式，使用apiFetch
       // 从示例前端: await W.fetch("/admin/send_mail", { method: "POST", body: JSON.stringify({ from_name, from_mail, to_name, to_mail, subject, is_html, content }) })
-      const response = await fetch('https://apimail.yzcjwds.xyz/admin/send_mail', {
+      await apiFetch<void>('/admin/send_mail', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-auth': authState.adminAuth || localStorage.getItem('adminAuth') || ''
-        },
-        body: JSON.stringify({
+        data: {
           from_name: data.from_name || '',
           from_mail: data.from_mail || '',
           to_name: data.to_name || '',
@@ -456,13 +452,8 @@ export const mailApi = {
           subject: data.subject,
           is_html: data.is_html,
           content: data.content
-        })
+        }
       })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`发送失败: ${response.status} ${errorText}`)
-      }
 
       console.log('Mail sent successfully by admin')
     } catch (error) {
