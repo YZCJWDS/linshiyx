@@ -78,7 +78,7 @@
           </n-button>
 
           <!-- 用户头像 -->
-          <div class="user-avatar" title="管理员">
+          <div class="user-avatar" title="点击查看完整头像" @click="showAvatarPreview = true">
             <img
               src="/image.jpg"
               alt="用户头像"
@@ -148,16 +148,49 @@
       description="Loading..."
     />
     </div> <!-- 关闭 app-content -->
+
+    <!-- 头像预览弹窗 -->
+    <n-modal
+      v-model:show="showAvatarPreview"
+      preset="card"
+      title="用户头像"
+      size="medium"
+      :bordered="false"
+      :segmented="false"
+      class="avatar-preview-modal"
+    >
+      <div class="avatar-preview-container">
+        <img
+          src="/image.jpg"
+          alt="用户头像完整预览"
+          class="avatar-preview-image"
+          @error="handleAvatarPreviewError"
+        />
+      </div>
+
+      <template #footer>
+        <div class="avatar-preview-footer">
+          <n-text depth="3" style="font-size: 12px;">
+            管理员头像
+          </n-text>
+          <n-button @click="showAvatarPreview = false" type="primary">
+            关闭
+          </n-button>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { 
-  NIcon, 
-  NButton, 
-  NBadge, 
+import {
+  NIcon,
+  NButton,
+  NBadge,
   NSpin,
+  NModal,
+  NText,
   useMessage
 } from 'naive-ui'
 import {
@@ -186,6 +219,7 @@ const backgroundError = ref(false)
 
 // 界面状态管理
 const showSendMail = ref(false)
+const showAvatarPreview = ref(false)
 
 // 检查背景图片加载状态
 function checkBackgroundImage() {
@@ -281,6 +315,13 @@ function handleAvatarError(event: Event) {
   // 设置默认头像或隐藏
   img.style.display = 'none'
   console.log('⚠️ Avatar image failed to load')
+}
+
+// 头像预览错误处理
+function handleAvatarPreviewError(event: Event) {
+  const img = event.target as HTMLImageElement
+  img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjVGNUY1Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgZmlsbD0iIzk5OTk5OSIgZm9udC1zaXplPSIxNiI+5aS05YOP5Yqg6L295aSx6LSlPC90ZXh0Pgo8L3N2Zz4K'
+  console.log('⚠️ Avatar preview image failed to load')
 }
 
 // Setup keyboard shortcuts
@@ -510,6 +551,61 @@ onUnmounted(() => {
 
 [data-theme="dark"] .user-avatar:hover {
   border-color: var(--n-primary-color);
+}
+
+/* 头像预览弹窗样式 */
+.avatar-preview-modal {
+  max-width: 500px;
+}
+
+.avatar-preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: var(--n-card-color);
+  border-radius: 8px;
+}
+
+.avatar-preview-image {
+  max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.avatar-preview-image:hover {
+  transform: scale(1.02);
+}
+
+.avatar-preview-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+}
+
+/* 深色模式下的预览弹窗 */
+[data-theme="dark"] .avatar-preview-image {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* 移动端预览弹窗优化 */
+@media (max-width: 768px) {
+  .avatar-preview-modal {
+    max-width: 90vw;
+  }
+
+  .avatar-preview-container {
+    padding: 16px;
+  }
+
+  .avatar-preview-image {
+    max-height: 300px;
+  }
 }
 
 .app-main {
