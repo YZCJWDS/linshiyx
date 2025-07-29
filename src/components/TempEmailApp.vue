@@ -76,6 +76,16 @@
               </n-icon>
             </template>
           </n-button>
+
+          <!-- 用户头像 -->
+          <div class="user-avatar" title="管理员">
+            <img
+              src="/image.jpg"
+              alt="用户头像"
+              class="avatar-image"
+              @error="handleAvatarError"
+            />
+          </div>
         </div>
       </div>
     </header>
@@ -265,6 +275,14 @@ function showSendMailInterface() {
   console.log('📧 Opening send mail interface')
 }
 
+// 头像加载错误处理
+function handleAvatarError(event: Event) {
+  const img = event.target as HTMLImageElement
+  // 设置默认头像或隐藏
+  img.style.display = 'none'
+  console.log('⚠️ Avatar image failed to load')
+}
+
 // Setup keyboard shortcuts
 useKeyboard([
   {
@@ -452,6 +470,48 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+/* 用户头像样式 */
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.user-avatar:hover {
+  border-color: var(--n-primary-color);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.user-avatar:hover .avatar-image {
+  transform: scale(1.1);
+}
+
+/* 深色模式下的头像样式 */
+[data-theme="dark"] .user-avatar {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .user-avatar:hover {
+  border-color: var(--n-primary-color);
+}
+
 .app-main {
   flex: 1;
   overflow: hidden;
@@ -600,6 +660,17 @@ onUnmounted(() => {
 
   .app-title {
     font-size: 18px;
+  }
+
+  /* 移动端头像样式 */
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    margin-left: 2px;
+  }
+
+  .header-right {
+    gap: 6px;
   }
 
   .app-main {
