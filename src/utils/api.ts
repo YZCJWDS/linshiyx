@@ -8,15 +8,13 @@ import type {
   GetMailsRequest,
   UserSettings
 } from '@/types'
+import { API_BASE_URL, DEFAULT_MAIL_DOMAIN } from '@/utils/config'
 
 // 扩展 AxiosRequestConfig 以支持自定义属性
 interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   addressJwt?: string
   userJwt?: string
 }
-
-// API Base Configuration - 完全按照参考前端的配置
-const API_BASE_URL = 'https://apimail.yzcjwds.xyz'
 
 class ApiError extends Error {
   constructor(message: string, public status?: number) {
@@ -314,7 +312,7 @@ export const mailApi = {
           try {
             // 使用管理员认证获取这个地址的用户JWT
             console.log('🔍 Getting user JWT for address:', params.address)
-            const response = await fetch(`/user_api/bind_address_jwt/${params.address}`, {
+            const response = await fetch(`${API_BASE_URL}/user_api/bind_address_jwt/${params.address}`, {
               headers: {
                 'x-admin-auth': authState.adminAuth || localStorage.getItem('adminAuth') || '',
                 'Content-Type': 'application/json'
@@ -486,7 +484,7 @@ export const settingsApi = {
         enableMailAllowList: false,
         mailAllowList: [],
         maxAddressCount: 10,
-        domains: ['yzcjwds.xyz']
+        domains: [DEFAULT_MAIL_DOMAIN]
       } as UserSettings
     }
   },

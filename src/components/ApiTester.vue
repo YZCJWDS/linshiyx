@@ -69,6 +69,7 @@ import {
   NCollapseItem
 } from 'naive-ui'
 import { Flask as TestIcon } from '@vicons/ionicons5'
+import { API_BASE_URL, DEFAULT_MAIL_DOMAIN } from '@/utils/config'
 
 interface TestResult {
   type: 'success' | 'error' | 'warning' | 'info'
@@ -107,7 +108,7 @@ async function testApiConnection() {
     addLog('info', '开始测试 API 连接...')
     
     // 测试基础连接
-    const baseUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'https://apimail.yzcjwds.xyz')
+    const baseUrl = API_BASE_URL
     addLog('info', `测试基础 URL: ${baseUrl}`)
     
     const response = await fetch(baseUrl)
@@ -137,12 +138,12 @@ async function testCreateEndpoint() {
   try {
     addLog('info', '开始测试创建邮箱端点...')
 
-    const baseUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'https://apimail.yzcjwds.xyz')
+    const baseUrl = API_BASE_URL
     const endpoint = '/api/new_address'
 
     const testData = {
       name: 'test',
-      domain: 'yzcjwds.xyz'
+      domain: DEFAULT_MAIL_DOMAIN
     }
 
     try {

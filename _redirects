@@ -1,10 +1,5 @@
 # Cloudflare Pages Redirects Configuration
 
-# API 代理到后端
-/api/* https://apimail.yzcjwds.xyz/api/:splat 200
-/admin/* https://apimail.yzcjwds.xyz/admin/:splat 200
-/telegram/* https://apimail.yzcjwds.xyz/telegram/:splat 200
-
 # SPA Fallback - All routes should serve index.html for client-side routing
 /*    /index.html   200
 
