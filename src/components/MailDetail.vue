@@ -31,7 +31,7 @@
                 <PersonIcon />
               </n-icon>
               <span class="meta-label">发件人:</span>
-              <span class="meta-value">{{ emailStore.selectedMail.source }}</span>
+              <span class="meta-value" :title="emailStore.selectedMail.source">{{ emailStore.selectedMail.source }}</span>
             </div>
 
             <div class="mail-to">
@@ -39,7 +39,7 @@
                 <MailIcon />
               </n-icon>
               <span class="meta-label">收件人:</span>
-              <span class="meta-value">{{ emailStore.selectedMail.address }}</span>
+              <span class="meta-value" :title="emailStore.selectedMail.address">{{ emailStore.selectedMail.address }}</span>
             </div>
 
             <div class="mail-date">
@@ -128,7 +128,7 @@
                 <DocumentIcon />
               </n-icon>
               <div class="attachment-details">
-                <span class="attachment-name">{{ attachment.filename }}</span>
+                <span class="attachment-name" :title="attachment.filename">{{ attachment.filename }}</span>
                 <span class="attachment-meta">
                   {{ attachment.content_type }} • {{ formatFileSize(attachment.size) }}
                 </span>
@@ -670,22 +670,39 @@ ${mail.message}`
 
 function downloadAttachment(attachment: EmailAttachment) {
   try {
-    // Decode base64 content
-    const binaryString = atob(attachment.content)
-    const bytes = new Uint8Array(binaryString.length)
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i)
+    let url = attachment.url
+    let shouldRevokeUrl = false
+
+    if (!url) {
+      let blob = attachment.blob
+
+      if (!blob && attachment.content) {
+        const binaryString = atob(attachment.content)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        blob = new Blob([bytes], { type: attachment.content_type })
+      }
+
+      if (!blob) {
+        throw new Error('Attachment content is unavailable')
+      }
+
+      url = URL.createObjectURL(blob)
+      shouldRevokeUrl = true
     }
 
-    const blob = new Blob([bytes], { type: attachment.content_type })
-    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = attachment.filename
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+
+    if (shouldRevokeUrl) {
+      URL.revokeObjectURL(url)
+    }
 
     message.success(`Downloaded ${attachment.filename}`)
   } catch (error) {
@@ -730,6 +747,23 @@ function handleIframeLoad(event: Event) {
   height: 100%;
   display: flex;
   flex-direction: column;
+  --detail-panel: rgba(255, 255, 255, 0.7);
+  --detail-panel-strong: rgba(255, 255, 255, 0.84);
+  --detail-item: rgba(255, 255, 255, 0.76);
+  --detail-item-hover: rgba(79, 143, 199, 0.1);
+  --detail-border: rgba(116, 146, 174, 0.22);
+  --detail-shadow: 0 8px 24px rgba(48, 77, 108, 0.1);
+  --detail-content-bg: rgba(255, 255, 255, 0.76);
+}
+
+[data-theme="dark"] .mail-detail {
+  --detail-panel: rgba(11, 24, 42, 0.58);
+  --detail-panel-strong: rgba(15, 31, 52, 0.74);
+  --detail-item: rgba(12, 26, 45, 0.78);
+  --detail-item-hover: rgba(114, 184, 232, 0.13);
+  --detail-border: rgba(148, 190, 225, 0.16);
+  --detail-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  --detail-content-bg: rgba(9, 22, 39, 0.72);
 }
 
 .empty-state {
@@ -744,8 +778,8 @@ function handleIframeLoad(event: Event) {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px;
 }
 
 .mail-header {
@@ -754,8 +788,11 @@ function handleIframeLoad(event: Event) {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--n-border-color);
+  padding: 14px;
+  border: 1px solid var(--detail-border);
+  border-radius: 6px;
+  background: var(--detail-panel-strong);
+  box-shadow: var(--detail-shadow);
 }
 
 .mail-header-main {
@@ -764,18 +801,18 @@ function handleIframeLoad(event: Event) {
 }
 
 .mail-subject {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--n-text-color);
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   line-height: 1.3;
   word-break: break-word;
 }
 
 .mail-meta-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
 }
 
 .mail-from,
@@ -784,7 +821,8 @@ function handleIframeLoad(event: Event) {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  min-width: 0;
+  font-size: 12px;
 }
 
 .meta-icon {
@@ -795,35 +833,43 @@ function handleIframeLoad(event: Event) {
 .meta-label {
   font-weight: 500;
   color: var(--n-text-color-2);
-  min-width: 40px;
+  min-width: 44px;
 }
 
 .meta-value {
   color: var(--n-text-color);
-  word-break: break-all;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mail-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--detail-border);
+  border-radius: 6px;
+  background: var(--detail-panel);
 }
 
 .attachments-section {
   flex-shrink: 0;
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--detail-border);
   border-radius: 6px;
   overflow: hidden;
+  background: var(--detail-panel);
 }
 
 .attachments-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  background: var(--n-card-color);
-  border-bottom: 1px solid var(--n-border-color);
+  padding: 10px 12px;
+  background: rgba(79, 143, 199, 0.1);
+  border-bottom: 1px solid var(--detail-border);
   font-weight: 500;
   color: var(--n-text-color);
 }
@@ -835,19 +881,32 @@ function handleIframeLoad(event: Event) {
 .attachments-list {
   display: flex;
   flex-direction: column;
+  gap: 1px;
+  padding: 6px;
 }
 
 .attachment-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--n-border-color);
-  background: var(--n-card-color);
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--detail-item);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .attachment-item:last-child {
   border-bottom: none;
+}
+
+.attachment-item:hover {
+  border-color: rgba(79, 143, 199, 0.28);
+  background: var(--detail-item-hover);
 }
 
 .attachment-info {
@@ -859,7 +918,7 @@ function handleIframeLoad(event: Event) {
 }
 
 .attachment-icon {
-  color: var(--n-text-color-2);
+  color: var(--n-primary-color);
   flex-shrink: 0;
 }
 
@@ -874,7 +933,9 @@ function handleIframeLoad(event: Event) {
   font-size: 13px;
   font-weight: 500;
   color: var(--n-text-color);
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .attachment-meta {
@@ -887,9 +948,10 @@ function handleIframeLoad(event: Event) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--detail-border);
   border-radius: 6px;
   overflow: hidden;
+  background: var(--detail-panel);
 }
 
 .mail-body-header {
@@ -897,25 +959,35 @@ function handleIframeLoad(event: Event) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--n-card-color);
-  border-bottom: 1px solid var(--n-border-color);
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--detail-panel-strong);
+  border-bottom: 1px solid var(--detail-border);
 }
 
 .body-title {
   font-weight: 500;
   color: var(--n-text-color);
+  flex-shrink: 0;
+}
+
+.view-options {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .mail-body-content {
   flex: 1;
   min-height: 0;
-  background: var(--n-card-color);
+  background: var(--detail-content-bg);
 }
 
 .rendered-content {
   height: 100%;
-  padding: 16px;
+  padding: 18px;
 }
 
 .html-content {
@@ -938,7 +1010,7 @@ function handleIframeLoad(event: Event) {
   padding: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--n-text-color);
   font-family: inherit;
   background: transparent;
@@ -954,7 +1026,7 @@ function handleIframeLoad(event: Event) {
 /* 自动适配模式 - 跟随系统主题 */
 .mail-display-auto {
   color: var(--n-text-color);
-  background: var(--n-card-color);
+  background: var(--detail-content-bg);
 }
 
 .mail-display-auto.system-dark {
@@ -1049,7 +1121,7 @@ function handleIframeLoad(event: Event) {
 
 .source-content {
   height: 100%;
-  padding: 16px;
+  padding: 18px;
 }
 
 .source-code {
@@ -1061,6 +1133,34 @@ function handleIframeLoad(event: Event) {
   color: var(--n-text-color);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
+  tab-size: 2;
+}
+
+[data-theme="dark"] .mail-header,
+[data-theme="dark"] .attachments-section,
+[data-theme="dark"] .mail-body {
+  background: var(--detail-panel);
+}
+
+[data-theme="dark"] .mail-actions,
+[data-theme="dark"] .mail-body-header {
+  background: var(--detail-panel-strong);
+}
+
+[data-theme="dark"] .mail-body-content {
+  background: var(--detail-content-bg);
+}
+
+[data-theme="dark"] .attachments-header {
+  background: rgba(114, 184, 232, 0.12);
+}
+
+[data-theme="dark"] .attachment-item {
+  background: var(--detail-item);
+}
+
+[data-theme="dark"] .attachment-item:hover {
+  background: var(--detail-item-hover);
 }
 
 .no-content {
@@ -1105,6 +1205,8 @@ function handleIframeLoad(event: Event) {
   }
 
   .mail-body-header {
+    align-items: flex-start;
+    flex-direction: column;
     padding: 10px 12px;
   }
 

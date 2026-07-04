@@ -52,7 +52,7 @@
             <n-badge :value="emailStore.addresses.length" :max="99" type="info" />
           </div>
           <div class="column-content">
-            <SendMailAddressManager ref="addressManagerRef" />
+            <SendMailAddressManager @select="handleFromAddressSelected" />
           </div>
         </div>
 
@@ -132,11 +132,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import {
   NIcon,
   NButton,
   NBadge,
+  NText,
   useMessage
 } from 'naive-ui'
 import {
@@ -146,12 +147,10 @@ import {
   Add as AddIcon
 } from '@vicons/ionicons5'
 import { useEmailStore } from '@/stores'
-import { mailApi } from '@/utils/api'
-import type { SendMailRequest } from '@/types'
+import type { EmailAddress } from '@/types'
 import SendMailAddressManager from './SendMailAddressManager.vue'
 import SendMailComposer from './SendMailComposer.vue'
 import SentMailList from './SentMailList.vue'
-import SendMailPreview from './SendMailPreview.vue'
 import SentMailDetail from './SentMailDetail.vue'
 
 // Define emits
@@ -163,14 +162,13 @@ const emailStore = useEmailStore()
 const message = useMessage()
 
 // Refs
-const addressManagerRef = ref()
 const sentMailListRef = ref()
 const sentMailDetailRef = ref()
 const sendMailComposerRef = ref()
 
 // State
 const showCompose = ref(false)
-const selectedFromAddress = ref(null)
+const selectedFromAddress = ref<EmailAddress | null>(null)
 const selectedSentMail = ref(null)
 const loading = ref({
   sentMails: false
@@ -179,6 +177,13 @@ const loading = ref({
 const sending = ref(false)
 
 // Methods
+function handleFromAddressSelected(address: EmailAddress | null) {
+  selectedFromAddress.value = address
+  if (!address) {
+    showCompose.value = false
+  }
+}
+
 function startCompose() {
   if (!selectedFromAddress.value) {
     message.warning('请先选择一个发件邮箱')
@@ -233,28 +238,6 @@ async function refreshSentMails() {
   }
 }
 
-// 监听地址选择状态
-let addressCheckInterval: NodeJS.Timeout | null = null
-
-onMounted(() => {
-  console.log('📧 Send mail app mounted')
-
-  // 监听地址管理器的选中状态
-  const checkSelectedAddress = () => {
-    if (addressManagerRef.value?.selectedFromAddress) {
-      selectedFromAddress.value = addressManagerRef.value.selectedFromAddress
-    }
-  }
-
-  // 定期检查选中状态
-  addressCheckInterval = setInterval(checkSelectedAddress, 100)
-})
-
-onUnmounted(() => {
-  if (addressCheckInterval) {
-    clearInterval(addressCheckInterval)
-  }
-})
 </script>
 
 <style scoped>
@@ -264,19 +247,36 @@ onUnmounted(() => {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  color: var(--n-text-color);
+  --send-panel: rgba(248, 252, 255, 0.74);
+  --send-panel-strong: rgba(255, 255, 255, 0.86);
+  --send-border: rgba(116, 146, 174, 0.24);
+  --send-border-strong: rgba(255, 255, 255, 0.62);
+  --send-shadow: 0 18px 48px rgba(48, 77, 108, 0.16);
+  --send-shadow-soft: 0 8px 24px rgba(48, 77, 108, 0.1);
+}
+
+[data-theme="dark"] .send-mail-app {
+  --send-panel: rgba(11, 24, 42, 0.76);
+  --send-panel-strong: rgba(15, 31, 52, 0.86);
+  --send-border: rgba(148, 190, 225, 0.18);
+  --send-border-strong: rgba(148, 190, 225, 0.26);
+  --send-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+  --send-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.24);
 }
 
 .app-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--send-panel-strong);
+  backdrop-filter: blur(18px) saturate(1.14);
+  border-bottom: 1px solid var(--send-border);
   padding: 12px 24px;
+  box-shadow: var(--send-shadow-soft);
   z-index: 100;
 }
 
 [data-theme="dark"] .app-header {
-  background: rgba(16, 16, 20, 0.95);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  background: rgba(8, 19, 34, 0.86);
+  border-bottom-color: var(--send-border);
 }
 
 .header-content {
@@ -305,6 +305,15 @@ onUnmounted(() => {
   color: var(--n-text-color);
 }
 
+.app-header :deep(.n-button) {
+  color: var(--n-text-color-2);
+}
+
+.app-header :deep(.n-button:hover) {
+  background: var(--n-primary-color-suppl);
+  color: var(--n-primary-color);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -314,46 +323,51 @@ onUnmounted(() => {
 .app-main {
   flex: 1;
   overflow: hidden;
-  padding: 16px;
+  padding: 12px 8px;
 }
 
 .three-column-layout {
   display: grid;
-  grid-template-columns: 300px 350px 1fr;
-  gap: 16px;
+  grid-template-columns: 280px 350px 1fr;
+  gap: 12px;
   height: 100%;
   max-width: 100%;
 }
 
 .column {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--send-panel);
+  backdrop-filter: blur(18px) saturate(1.08);
+  border-radius: 8px;
+  border: 1px solid var(--send-border-strong);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    var(--send-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
 [data-theme="dark"] .column {
-  background: rgba(16, 16, 20, 0.8);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--send-panel);
+  border-color: var(--send-border-strong);
+  box-shadow:
+    var(--send-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .column-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--send-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
+  background: var(--send-panel-strong);
+  backdrop-filter: blur(12px);
 }
 
 [data-theme="dark"] .column-header {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
+  border-bottom-color: var(--send-border);
+  background: rgba(15, 31, 52, 0.82);
 }
 
 .column-title {

@@ -125,6 +125,7 @@ export async function parseEmailMessage(mail: any): Promise<any> {
           return {
             id: attachment.content_id || Math.random().toString(36).substring(2, 15),
             filename: attachment.filename || attachment.content_id || '',
+            content_type: attachment.content_type || 'application/octet-stream',
             size: attachment.content?.length || 0,
             url: url,
             blob: blob

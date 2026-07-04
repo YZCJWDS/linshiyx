@@ -25,15 +25,28 @@ export interface EmailMessage {
   subject: string
   message: string
   created_at: string
-  is_html?: boolean
+  updated_at?: string
+  raw?: string
+  content?: string
+  text?: string
+  body?: string
+  to_mail?: string
+  to_name?: string
+  from_mail?: string
+  from_name?: string
+  originalSource?: string
+  is_html?: boolean | string
   attachments?: EmailAttachment[]
 }
 
 export interface EmailAttachment {
+  id?: string
   filename: string
   content_type: string
   size: number
-  content: string
+  content?: string
+  url?: string
+  blob?: Blob
 }
 
 // User Settings Types

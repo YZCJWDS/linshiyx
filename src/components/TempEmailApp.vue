@@ -53,8 +53,8 @@
           <n-button
             quaternary
             circle
-            @click="showSendMailInterface"
-            title="发送邮件"
+            @click="openComposeModal"
+            :title="emailStore.selectedAddress ? '使用当前邮箱发送邮件' : '请先选择发件邮箱'"
           >
             <template #icon>
               <n-icon>
@@ -92,8 +92,7 @@
 
     <!-- Main Content - Three Column Layout -->
     <main class="app-main">
-      <!-- 收件箱界面 -->
-      <div v-if="!showSendMail" class="three-column-layout">
+      <div class="three-column-layout">
         <!-- Column 1: Email Manager -->
         <div class="column email-manager-column">
           <div class="column-header">
@@ -136,8 +135,6 @@
         </div>
       </div>
 
-      <!-- 发送邮件界面 -->
-      <SendMailApp v-else @back="showSendMail = false" />
     </main>
 
     <!-- Global Loading Overlay -->
@@ -179,6 +176,54 @@
         </div>
       </template>
     </n-modal>
+
+    <!-- 发送邮件弹窗 -->
+    <n-modal
+      v-model:show="showComposeModal"
+      preset="card"
+      title="发送邮件"
+      :bordered="false"
+      :segmented="false"
+      :mask-closable="false"
+      :style="{ width: '760px', maxWidth: '94vw' }"
+      class="compose-mail-modal"
+    >
+      <div class="compose-modal-subtitle">
+        <n-text depth="3">
+          {{ emailStore.selectedAddress?.address ? `发件邮箱：${emailStore.selectedAddress.address}` : '请先选择一个邮箱地址' }}
+        </n-text>
+      </div>
+
+      <SendMailComposer
+        v-if="showComposeModal"
+        ref="sendMailComposerRef"
+        :key="composeModalKey"
+        :from-address="emailStore.selectedAddress"
+        @sent="handleMailSent"
+        @cancel="closeComposeModal"
+      />
+
+      <template #footer>
+        <div class="compose-modal-footer">
+          <n-button @click="closeComposeModal" :disabled="sendingMail">
+            取消
+          </n-button>
+          <n-button
+            type="primary"
+            :loading="sendingMail"
+            :disabled="!emailStore.selectedAddress?.address"
+            @click="sendCurrentMail"
+          >
+            <template #icon>
+              <n-icon>
+                <SendIcon />
+              </n-icon>
+            </template>
+            发送邮件
+          </n-button>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>
 
@@ -206,7 +251,7 @@ import { useKeyboard, commonShortcuts } from '@/composables/useKeyboard'
 import EmailManager from './EmailManager.vue'
 import MailList from './MailList.vue'
 import MailDetail from './MailDetail.vue'
-import SendMailApp from './SendMailApp.vue'
+import SendMailComposer from './SendMailComposer.vue'
 
 const emailStore = useEmailStore()
 const uiStore = useUiStore()
@@ -216,10 +261,14 @@ const message = useMessage()
 // 背景图片状态
 const backgroundLoaded = ref(false)
 const backgroundError = ref(false)
+const appBackgroundUrl = '/image/hero-bg.webp'
 
 // 界面状态管理
-const showSendMail = ref(false)
 const showAvatarPreview = ref(false)
+const showComposeModal = ref(false)
+const sendingMail = ref(false)
+const composeModalKey = ref(0)
+const sendMailComposerRef = ref<InstanceType<typeof SendMailComposer> | null>(null)
 
 // 检查背景图片加载状态
 function checkBackgroundImage() {
@@ -241,14 +290,13 @@ function checkBackgroundImage() {
   }
   img.onerror = () => {
     backgroundError.value = true
-    console.error('❌ Failed to load background image: /preview.jpg')
-    console.log('💡 Please ensure preview.jpg is in the public directory')
+    console.error(`❌ Failed to load background image: ${appBackgroundUrl}`)
+    console.log('💡 Please ensure the background asset is in the public directory')
   }
-  img.src = '/preview.jpg'
+  img.src = appBackgroundUrl
 }
 
-// 初始化应用时加载存储的数据
-onMounted(async () => {
+async function initializeApp() {
   try {
     // 检查背景图片
     checkBackgroundImage()
@@ -262,11 +310,17 @@ onMounted(async () => {
     // 然后初始化邮箱存储（如果认证没有加载邮箱池）
     await emailStore.initializeStore()
 
+    if (authStore.hasValidAuth) {
+      await emailStore.loadAddresses()
+      await emailStore.loadUserSettings()
+      emailStore.startAutoRefresh(30000)
+    }
+
     console.log('✅ App initialization completed')
   } catch (error) {
     console.error('❌ App initialization failed:', error)
   }
-})
+}
 
 const isDark = computed(() => uiStore.theme === 'dark')
 const isRefreshing = computed(() => 
@@ -303,10 +357,44 @@ async function handleLogout() {
   }
 }
 
-// 显示发送邮件界面
-function showSendMailInterface() {
-  showSendMail.value = true
-  console.log('📧 Opening send mail interface')
+function openComposeModal() {
+  if (!emailStore.selectedAddress?.address) {
+    message.warning('请先选择一个发件邮箱')
+    return
+  }
+
+  composeModalKey.value += 1
+  showComposeModal.value = true
+  console.log('📧 Opening compose modal from:', emailStore.selectedAddress.address)
+}
+
+function closeComposeModal() {
+  if (sendingMail.value) return
+  showComposeModal.value = false
+}
+
+async function sendCurrentMail() {
+  if (!emailStore.selectedAddress?.address) {
+    message.warning('请先选择一个发件邮箱')
+    return
+  }
+
+  if (!sendMailComposerRef.value) {
+    message.error('邮件编辑器未就绪')
+    return
+  }
+
+  sendingMail.value = true
+  try {
+    await sendMailComposerRef.value.sendMail()
+  } finally {
+    sendingMail.value = false
+  }
+}
+
+function handleMailSent() {
+  showComposeModal.value = false
+  message.success('邮件发送成功')
 }
 
 // 头像加载错误处理
@@ -342,22 +430,11 @@ useKeyboard([
   }
 ])
 
-onMounted(async () => {
-  // Initialize auth
-  authStore.initAuth()
-
-  // Initialize data only if authenticated
-  if (authStore.hasValidAuth) {
-    await emailStore.loadAddresses()
-    await emailStore.loadUserSettings()
-
-    // Start auto-refresh for mails
-    emailStore.startAutoRefresh(30000) // Refresh every 30 seconds
-  }
-})
+onMounted(initializeApp)
 
 onUnmounted(() => {
   emailStore.stopAutoRefresh()
+  emailStore.stopBackgroundSync()
 })
 </script>
 
@@ -368,6 +445,26 @@ onUnmounted(() => {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  color: var(--n-text-color);
+  --app-panel: rgba(248, 252, 255, 0.74);
+  --app-panel-strong: rgba(255, 255, 255, 0.86);
+  --app-panel-soft: rgba(239, 247, 252, 0.64);
+  --app-border: rgba(116, 146, 174, 0.24);
+  --app-border-strong: rgba(255, 255, 255, 0.62);
+  --app-shadow: 0 18px 48px rgba(48, 77, 108, 0.16);
+  --app-shadow-soft: 0 8px 24px rgba(48, 77, 108, 0.1);
+  --app-accent-soft: rgba(79, 143, 199, 0.14);
+}
+
+[data-theme="dark"] .temp-email-app {
+  --app-panel: rgba(11, 24, 42, 0.76);
+  --app-panel-strong: rgba(15, 31, 52, 0.86);
+  --app-panel-soft: rgba(8, 19, 34, 0.66);
+  --app-border: rgba(148, 190, 225, 0.18);
+  --app-border-strong: rgba(148, 190, 225, 0.26);
+  --app-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+  --app-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.24);
+  --app-accent-soft: rgba(114, 184, 232, 0.16);
 }
 
 /* 背景图片层 - 参考VSCode背景插件方法 */
@@ -377,13 +474,14 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/preview.jpg');
+  background-image: url('/image/hero-bg.webp');
   background-size: cover;
-  background-position: center;
+  background-position: center right;
   background-repeat: no-repeat;
   background-attachment: fixed;
   z-index: -2;
-  transform: scale(1.05); /* 轻微缩放避免边缘 */
+  transform: scale(1.03); /* 轻微缩放避免边缘 */
+  filter: saturate(0.96) contrast(0.98);
 }
 
 /* 背景遮罩层 - 提供更好的可读性 */
@@ -394,15 +492,20 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.7) 0%,
-    rgba(255, 255, 255, 0.5) 25%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.5) 75%,
-    rgba(255, 255, 255, 0.7) 100%
-  );
-  backdrop-filter: blur(2px);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(241, 248, 253, 0.88) 0%,
+      rgba(241, 248, 253, 0.74) 34%,
+      rgba(241, 248, 253, 0.56) 60%,
+      rgba(241, 248, 253, 0.78) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(195, 220, 239, 0.16) 100%
+    );
+  backdrop-filter: blur(1px);
   z-index: -1;
 }
 
@@ -418,15 +521,16 @@ onUnmounted(() => {
 
 /* 深色模式下的背景调整 */
 [data-theme="dark"] .app-background::after {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.4) 25%,
-    rgba(0, 0, 0, 0.2) 50%,
-    rgba(0, 0, 0, 0.4) 75%,
-    rgba(0, 0, 0, 0.6) 100%
-  );
-  backdrop-filter: blur(3px);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(7, 17, 31, 0.88) 0%,
+      rgba(7, 17, 31, 0.78) 34%,
+      rgba(7, 17, 31, 0.58) 58%,
+      rgba(7, 17, 31, 0.82) 100%
+    ),
+    radial-gradient(circle at 76% 16%, rgba(88, 158, 212, 0.12), transparent 32%);
+  backdrop-filter: blur(1.5px);
 }
 
 /* 背景图片加载状态 */
@@ -442,8 +546,8 @@ onUnmounted(() => {
 .app-background.background-error {
   background: linear-gradient(
     135deg,
-    #667eea 0%,
-    #764ba2 100%
+    #dbeaf5 0%,
+    #8fbdda 100%
   );
   opacity: 0.8;
 }
@@ -462,18 +566,18 @@ onUnmounted(() => {
 .app-header {
   flex-shrink: 0;
   height: 60px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(15px) saturate(1.2);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-panel-strong);
+  backdrop-filter: blur(18px) saturate(1.14);
+  box-shadow: var(--app-shadow-soft);
   z-index: 100;
 }
 
 /* 深色模式下的头部样式 */
 [data-theme="dark"] .app-header {
-  background: rgba(0, 0, 0, 0.6);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+  background: rgba(8, 19, 34, 0.82);
+  border-bottom: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-soft);
 }
 
 .header-content {
@@ -505,6 +609,15 @@ onUnmounted(() => {
   color: var(--n-primary-color);
 }
 
+.app-header :deep(.n-button) {
+  color: var(--n-text-color-2);
+}
+
+.app-header :deep(.n-button:hover) {
+  background: var(--app-accent-soft);
+  color: var(--n-primary-color);
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -517,8 +630,8 @@ onUnmounted(() => {
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.46);
+  background: var(--app-panel-soft);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -545,8 +658,8 @@ onUnmounted(() => {
 
 /* 深色模式下的头像样式 */
 [data-theme="dark"] .user-avatar {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(148, 190, 225, 0.26);
+  background: rgba(8, 19, 34, 0.72);
 }
 
 [data-theme="dark"] .user-avatar:hover {
@@ -586,6 +699,43 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding-top: 8px;
+}
+
+.compose-modal-subtitle {
+  margin: -4px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-panel-soft);
+}
+
+.compose-mail-modal :deep(.n-card) {
+  background:
+    linear-gradient(145deg, rgba(248, 252, 255, 0.96), rgba(233, 243, 251, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow: 0 28px 80px rgba(48, 77, 108, 0.22);
+  backdrop-filter: blur(20px) saturate(1.1);
+}
+
+.compose-mail-modal :deep(.send-mail-composer) {
+  height: min(68vh, 620px);
+}
+
+.compose-mail-modal :deep(.composer-content) {
+  padding: 6px 2px 0;
+}
+
+.compose-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+[data-theme="dark"] .compose-mail-modal :deep(.n-card) {
+  background:
+    linear-gradient(145deg, rgba(15, 31, 52, 0.96), rgba(9, 22, 39, 0.94));
+  border: 1px solid rgba(148, 190, 225, 0.22);
+  box-shadow: 0 32px 86px rgba(0, 0, 0, 0.42);
 }
 
 /* 深色模式下的预览弹窗 */
@@ -628,14 +778,13 @@ onUnmounted(() => {
 .column {
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(15px) saturate(1.1);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--app-panel);
+  backdrop-filter: blur(18px) saturate(1.08);
+  border-radius: 8px;
+  border: 1px solid var(--app-border-strong);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    var(--app-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
   overflow: hidden;
   min-height: 0;
   position: relative;
@@ -658,12 +807,11 @@ onUnmounted(() => {
 
 /* 深色模式下的列样式 */
 [data-theme="dark"] .column {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--app-panel);
+  border: 1px solid var(--app-border-strong);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    var(--app-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 [data-theme="dark"] .column::before {
@@ -675,12 +823,16 @@ onUnmounted(() => {
 
 .column-header {
   flex-shrink: 0;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--n-border-color);
-  background: var(--n-card-color);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-panel-strong);
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+[data-theme="dark"] .column-header {
+  background: rgba(15, 31, 52, 0.82);
 }
 
 .column-title {
@@ -688,6 +840,7 @@ onUnmounted(() => {
   font-weight: 600;
   color: var(--n-text-color);
   margin: 0;
+  line-height: 1.2;
 }
 
 .column-content {
@@ -715,7 +868,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(241, 248, 253, 0.8);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -723,7 +876,7 @@ onUnmounted(() => {
 }
 
 [data-theme="dark"] .global-loading {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(7, 17, 31, 0.82);
 }
 
 /* Responsive Design */

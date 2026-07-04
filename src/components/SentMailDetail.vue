@@ -266,6 +266,17 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
+  --sent-detail-panel: rgba(255, 255, 255, 0.74);
+  --sent-detail-panel-strong: rgba(255, 255, 255, 0.84);
+  --sent-detail-border: rgba(116, 146, 174, 0.22);
+  --sent-detail-shadow: 0 8px 24px rgba(48, 77, 108, 0.1);
+}
+
+[data-theme="dark"] .sent-mail-detail {
+  --sent-detail-panel: rgba(12, 26, 45, 0.74);
+  --sent-detail-panel-strong: rgba(15, 31, 52, 0.82);
+  --sent-detail-border: rgba(148, 190, 225, 0.16);
+  --sent-detail-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .detail-content {
@@ -283,15 +294,16 @@ defineExpose({
 }
 
 .mail-header {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--n-border-color);
+  background: var(--sent-detail-panel);
+  border: 1px solid var(--sent-detail-border);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 16px;
+  box-shadow: var(--sent-detail-shadow);
 }
 
 [data-theme="dark"] .mail-header {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sent-detail-panel);
 }
 
 .header-top {
@@ -341,28 +353,29 @@ defineExpose({
 }
 
 .mail-content {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--n-border-color);
+  background: var(--sent-detail-panel);
+  border: 1px solid var(--sent-detail-border);
   border-radius: 8px;
   margin-bottom: 16px;
   overflow: hidden;
+  box-shadow: var(--sent-detail-shadow);
 }
 
 [data-theme="dark"] .mail-content {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sent-detail-panel);
 }
 
 .content-header {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--n-border-color);
-  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid var(--sent-detail-border);
+  background: var(--sent-detail-panel-strong);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 [data-theme="dark"] .content-header {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--sent-detail-panel-strong);
 }
 
 .content-header h3 {
@@ -382,7 +395,7 @@ defineExpose({
 }
 
 .html-content {
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--sent-detail-border);
   border-radius: 4px;
   background: #fff;
   min-height: 200px;
@@ -400,14 +413,14 @@ defineExpose({
 }
 
 .text-content {
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--sent-detail-border);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(79, 143, 199, 0.06);
   min-height: 200px;
 }
 
 [data-theme="dark"] .text-content {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(9, 22, 39, 0.72);
 }
 
 .text-display {

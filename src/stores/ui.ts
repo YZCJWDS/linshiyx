@@ -84,6 +84,7 @@ export const useUiStore = defineStore('ui', () => {
 
   function setTheme(newTheme: 'light' | 'dark') {
     theme.value = newTheme
+    localStorage.setItem('theme', newTheme)
     // Apply theme to document
     document.documentElement.setAttribute('data-theme', newTheme)
   }

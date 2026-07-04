@@ -1,10 +1,10 @@
 /* Global CSS Variables */
 :root {
   /* Colors */
-  --primary-color: #18a058;
-  --primary-color-hover: #36ad6a;
-  --primary-color-pressed: #0c7a43;
-  --primary-color-suppl: rgba(24, 160, 88, 0.1);
+  --primary-color: #4f8fc7;
+  --primary-color-hover: #67a9d6;
+  --primary-color-pressed: #367bb8;
+  --primary-color-suppl: rgba(79, 143, 199, 0.14);
   
   --info-color: #2080f0;
   --info-color-hover: #4098fc;
@@ -21,10 +21,10 @@
   --error-color-pressed: #ab1f3f;
   --error-color-suppl: rgba(208, 48, 80, 0.1);
   
-  --success-color: #18a058;
-  --success-color-hover: #36ad6a;
-  --success-color-pressed: #0c7a43;
-  --success-color-suppl: rgba(24, 160, 88, 0.1);
+  --success-color: #38a89d;
+  --success-color-hover: #4db9ad;
+  --success-color-pressed: #2c8f86;
+  --success-color-suppl: rgba(56, 168, 157, 0.12);
   
   /* Text Colors */
   --text-color: #333639;
@@ -33,7 +33,7 @@
   --text-color-disabled: #c0c4cc;
   
   /* Background Colors */
-  --body-color: #fff;
+  --body-color: #eef6fb;
   --card-color: #fff;
   --modal-color: #fff;
   --popover-color: #fff;
@@ -81,21 +81,30 @@
 
 /* Dark Theme Variables */
 [data-theme="dark"] {
+  --primary-color: #72b8e8;
+  --primary-color-hover: #8ac9f5;
+  --primary-color-pressed: #4f9ed4;
+  --primary-color-suppl: rgba(114, 184, 232, 0.18);
+  --success-color: #64d6c1;
+  --success-color-hover: #7be6d1;
+  --success-color-pressed: #38bba6;
+  --success-color-suppl: rgba(100, 214, 193, 0.16);
+
   /* Text Colors */
-  --text-color: rgba(255, 255, 255, 0.9);
-  --text-color-2: rgba(255, 255, 255, 0.7);
-  --text-color-3: rgba(255, 255, 255, 0.5);
-  --text-color-disabled: rgba(255, 255, 255, 0.3);
+  --text-color: rgba(237, 247, 255, 0.94);
+  --text-color-2: rgba(207, 225, 240, 0.74);
+  --text-color-3: rgba(178, 202, 224, 0.56);
+  --text-color-disabled: rgba(178, 202, 224, 0.36);
   
   /* Background Colors */
-  --body-color: #101014;
-  --card-color: #18181c;
-  --modal-color: #1e1e22;
-  --popover-color: #1e1e22;
+  --body-color: #07111f;
+  --card-color: #101c2c;
+  --modal-color: #101c2c;
+  --popover-color: #101c2c;
   
   /* Border Colors */
-  --border-color: #262626;
-  --divider-color: #262626;
+  --border-color: rgba(148, 178, 205, 0.18);
+  --divider-color: rgba(148, 178, 205, 0.16);
 }
 
 /* Global Reset */
@@ -140,11 +149,11 @@ body {
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(148, 190, 225, 0.28);
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(148, 190, 225, 0.42);
 }
 
 /* Focus Styles */

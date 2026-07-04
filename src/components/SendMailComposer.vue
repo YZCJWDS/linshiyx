@@ -249,6 +249,13 @@ defineExpose({
   display: flex;
   flex-direction: column;
   max-height: 100%;
+  --composer-panel: rgba(255, 255, 255, 0.72);
+  --composer-border: rgba(116, 146, 174, 0.22);
+}
+
+[data-theme="dark"] .send-mail-composer {
+  --composer-panel: rgba(12, 26, 45, 0.72);
+  --composer-border: rgba(148, 190, 225, 0.16);
 }
 
 .composer-content {
@@ -263,14 +270,16 @@ defineExpose({
 }
 
 .content-preview {
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--composer-border);
   border-radius: 6px;
   min-height: 200px;
+  background: var(--composer-panel);
 }
 
 .rich-editor {
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--composer-border);
   border-radius: 6px;
+  background: var(--composer-panel);
 }
 
 .editor-container {
@@ -286,13 +295,13 @@ defineExpose({
 }
 
 .send-button:not(:disabled) {
-  background: linear-gradient(135deg, #18a058 0%, #36ad6a 100%);
-  box-shadow: 0 4px 12px rgba(24, 160, 88, 0.3);
+  background: linear-gradient(135deg, #4f8fc7 0%, #68b6ce 100%);
+  box-shadow: 0 4px 12px rgba(79, 143, 199, 0.26);
 }
 
 .send-button:not(:disabled):hover {
-  background: linear-gradient(135deg, #16a085 0%, #27ae60 100%);
-  box-shadow: 0 6px 16px rgba(24, 160, 88, 0.4);
+  background: linear-gradient(135deg, #579bd4 0%, #66d1d1 100%);
+  box-shadow: 0 6px 16px rgba(79, 143, 199, 0.34);
   transform: translateY(-1px);
 }
 

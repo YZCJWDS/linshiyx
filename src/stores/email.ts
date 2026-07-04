@@ -44,6 +44,158 @@ export const useEmailStore = defineStore('email', () => {
     deleting: false
   })
 
+  type NormalizedMailFields = Partial<Pick<
+    EmailMessage,
+    | 'raw'
+    | 'to_mail'
+    | 'source'
+    | 'subject'
+    | 'message'
+    | 'text'
+    | 'content'
+    | 'is_html'
+    | 'attachments'
+    | 'originalSource'
+  >>
+
+  const MAIL_PARSE_CACHE_LIMIT = 300
+  const mailParseCache = new Map<string, NormalizedMailFields>()
+
+  function hashMailRaw(raw: string): string {
+    let hash = 0
+    for (let i = 0; i < raw.length; i++) {
+      hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0
+    }
+    return hash.toString(36)
+  }
+
+  function getMailParseCacheKey(mail: EmailMessage, raw: string): string {
+    return `${mail.id}:${raw.length}:${hashMailRaw(raw)}`
+  }
+
+  function rememberParsedMail(cacheKey: string, fields: NormalizedMailFields) {
+    if (mailParseCache.has(cacheKey)) {
+      mailParseCache.delete(cacheKey)
+    }
+
+    mailParseCache.set(cacheKey, fields)
+
+    if (mailParseCache.size > MAIL_PARSE_CACHE_LIMIT) {
+      const oldestKey = mailParseCache.keys().next().value
+      if (oldestKey) {
+        mailParseCache.delete(oldestKey)
+      }
+    }
+  }
+
+  function applyNormalizedMailFields(mail: EmailMessage, fields: NormalizedMailFields): EmailMessage {
+    Object.assign(mail, fields)
+    return mail
+  }
+
+  async function normalizeMail(mail: EmailMessage, verbose = false): Promise<EmailMessage> {
+    const raw = mail.raw
+    if (typeof raw !== 'string' || !raw) {
+      return mail
+    }
+
+    const cacheKey = getMailParseCacheKey(mail, raw)
+    const cachedFields = mailParseCache.get(cacheKey)
+    if (cachedFields) {
+      return applyNormalizedMailFields(mail, cachedFields)
+    }
+
+    try {
+      if (verbose) {
+        console.log('Parsing raw data for mail:', mail.id)
+      }
+
+      let parsedFields: NormalizedMailFields | null = null
+
+      try {
+        const rawData = JSON.parse(raw)
+        const formattedRaw = JSON.stringify(rawData, null, 2)
+
+        if (rawData.version === "v2") {
+          parsedFields = {
+            to_mail: rawData.to_name ? `${rawData.to_name} <${rawData.to_mail}>` : rawData.to_mail,
+            subject: rawData.subject,
+            is_html: rawData.is_html,
+            content: rawData.content,
+            raw: formattedRaw
+          }
+        } else {
+          parsedFields = {
+            subject: rawData.subject,
+            is_html: rawData.content?.[0]?.type !== "text/plain",
+            content: rawData.content?.[0]?.value,
+            raw: formattedRaw
+          }
+        }
+
+        applyNormalizedMailFields(mail, parsedFields)
+
+        if (verbose) {
+          console.log('Processed JSON mail:', {
+            id: mail.id,
+            subject: mail.subject,
+            is_html: mail.is_html,
+            content_length: mail.content?.length || 0
+          })
+        }
+      } catch (jsonError) {
+        if (verbose) {
+          console.log('JSON parse failed, trying WASM parse for mail:', mail.id)
+        }
+
+        await parseEmailMessage(mail)
+
+        parsedFields = {
+          originalSource: mail.originalSource,
+          source: mail.source,
+          subject: mail.subject,
+          message: mail.message,
+          text: mail.text,
+          content: mail.content,
+          is_html: mail.is_html,
+          attachments: mail.attachments
+        }
+
+        if (verbose) {
+          console.log('Processed WASM mail:', {
+            id: mail.id,
+            subject: mail.subject,
+            is_html: mail.is_html,
+            content_length: mail.content?.length || 0,
+            message_length: mail.message?.length || 0,
+            text_length: mail.text?.length || 0
+          })
+        }
+      }
+
+      if (parsedFields) {
+        rememberParsedMail(cacheKey, parsedFields)
+      }
+    } catch (error) {
+      console.warn('Failed to parse raw data for mail:', mail.id, error)
+    }
+
+    return mail
+  }
+
+  async function normalizeMails(rawMails: EmailMessage[] = [], verbose = false): Promise<EmailMessage[]> {
+    return Promise.all(rawMails.map(mail => normalizeMail(mail, verbose)))
+  }
+
+  function replaceMails(processedMails: EmailMessage[]) {
+    const selectedMailId = selectedMail.value?.id
+    mails.value = processedMails
+
+    if (selectedMailId) {
+      selectedMail.value = processedMails.find(mail => mail.id === selectedMailId) || null
+    }
+  }
+
   // 本地存储函数
   // 使用现有的 addressApi 进行后端同步
   async function saveAddressesToBackend() {
@@ -431,60 +583,8 @@ export const useEmailStore = defineStore('email', () => {
         keyword
       })
 
-      // 按照示例前端的方式解析邮件数据
-      const processedMails = await Promise.all((response.results || []).map(async (mail: EmailMessage) => {
-        try {
-          if (mail.raw) {
-            console.log('Parsing raw data for mail:', mail.id)
-
-            // 首先尝试作为JSON解析（示例前端的格式）
-            try {
-              const rawData = JSON.parse(mail.raw)
-
-              // 按照示例前端的解析逻辑
-              if (rawData.version === "v2") {
-                mail.to_mail = rawData.to_name ? `${rawData.to_name} <${rawData.to_mail}>` : rawData.to_mail
-                mail.subject = rawData.subject
-                mail.is_html = rawData.is_html
-                mail.content = rawData.content
-                mail.raw = JSON.stringify(rawData, null, 2)
-              } else {
-                // v1 格式处理
-                mail.subject = rawData.subject
-                mail.is_html = rawData.content?.[0]?.type !== "text/plain"
-                mail.content = rawData.content?.[0]?.value
-                mail.raw = JSON.stringify(rawData, null, 2)
-              }
-
-              console.log('Processed JSON mail:', {
-                id: mail.id,
-                subject: mail.subject,
-                is_html: mail.is_html,
-                content_length: mail.content?.length || 0
-              })
-            } catch (jsonError) {
-              // 如果JSON解析失败，使用WASM邮件解析器（完全按照示例前端）
-              console.log('JSON parse failed, trying WASM parse for mail:', mail.id)
-
-              await parseEmailMessage(mail)
-
-              console.log('Processed WASM mail:', {
-                id: mail.id,
-                subject: mail.subject,
-                is_html: mail.is_html,
-                content_length: mail.content?.length || 0,
-                message_length: mail.message?.length || 0,
-                text_length: mail.text?.length || 0
-              })
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to parse raw data for mail:', mail.id, error)
-        }
-        return mail
-      }))
-
-      mails.value = processedMails
+      const processedMails = await normalizeMails(response.results || [], true)
+      replaceMails(processedMails)
       console.log('Loaded mails:', mails.value.length)
     } catch (error) {
       console.error('Load mails error:', error)
@@ -590,6 +690,8 @@ export const useEmailStore = defineStore('email', () => {
 
   // Auto-refresh mails for selected address (按照示例前端的方式)
   let refreshInterval: NodeJS.Timeout | null = null
+  let backgroundSyncInterval: NodeJS.Timeout | null = null
+  let beforeUnloadRegistered = false
 
   // 后台静默刷新邮件（不显示加载状态）
   async function silentRefreshMails(address?: string, keyword?: string) {
@@ -614,44 +716,13 @@ export const useEmailStore = defineStore('email', () => {
         keyword
       })
 
-      // 按照示例前端的方式解析邮件数据
-      const processedMails = await Promise.all((response.results || []).map(async (mail: EmailMessage) => {
-        try {
-          if (mail.raw) {
-            // 首先尝试作为JSON解析（示例前端的格式）
-            try {
-              const rawData = JSON.parse(mail.raw)
-
-              // 按照示例前端的解析逻辑
-              if (rawData.version === "v2") {
-                mail.to_mail = rawData.to_name ? `${rawData.to_name} <${rawData.to_mail}>` : rawData.to_mail
-                mail.subject = rawData.subject
-                mail.is_html = rawData.is_html
-                mail.content = rawData.content
-                mail.raw = JSON.stringify(rawData, null, 2)
-              } else {
-                // v1 格式处理
-                mail.subject = rawData.subject
-                mail.is_html = rawData.content?.[0]?.type !== "text/plain"
-                mail.content = rawData.content?.[0]?.value
-                mail.raw = JSON.stringify(rawData, null, 2)
-              }
-            } catch (jsonError) {
-              // 如果JSON解析失败，使用WASM邮件解析器
-              await parseEmailMessage(mail)
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to parse raw data for mail:', mail.id, error)
-        }
-        return mail
-      }))
+      const processedMails = await normalizeMails(response.results || [])
 
       // 静默更新邮件列表（不触发UI加载状态）
       const oldMailIds = new Set(mails.value.map(mail => mail.id))
       const newMails = processedMails.filter(mail => !oldMailIds.has(mail.id))
 
-      mails.value = processedMails
+      replaceMails(processedMails)
 
       // 检测新邮件并更新计数（只有非首次加载才计算新邮件）
       if (newMails.length > 0 && address && !isFirstLoad) {
@@ -689,6 +760,49 @@ export const useEmailStore = defineStore('email', () => {
       clearInterval(refreshInterval)
       refreshInterval = null
       console.log('⏹️ Auto-refresh stopped')
+    }
+  }
+
+  function saveBeforeUnload() {
+    console.log('🔄 Auto-saving before page unload')
+    saveAddressesToStorage()
+    if (selectedAddress.value) {
+      saveSelectedAddressToStorage()
+    }
+  }
+
+  function registerBeforeUnloadSave() {
+    if (beforeUnloadRegistered) return
+    window.addEventListener('beforeunload', saveBeforeUnload)
+    beforeUnloadRegistered = true
+  }
+
+  function unregisterBeforeUnloadSave() {
+    if (!beforeUnloadRegistered) return
+    window.removeEventListener('beforeunload', saveBeforeUnload)
+    beforeUnloadRegistered = false
+  }
+
+  function startBackgroundSync() {
+    if (backgroundSyncInterval) return
+
+    backgroundSyncInterval = setInterval(async () => {
+      if (addresses.value.length > 0) {
+        console.log('🔄 Background sync to backend...')
+        try {
+          await saveAddressesToBackend()
+        } catch (error) {
+          console.warn('⚠️ Background sync failed:', error)
+        }
+      }
+    }, 5 * 60 * 1000)
+  }
+
+  function stopBackgroundSync() {
+    if (backgroundSyncInterval) {
+      clearInterval(backgroundSyncInterval)
+      backgroundSyncInterval = null
+      console.log('⏹️ Background sync stopped')
     }
   }
 
@@ -730,26 +844,9 @@ export const useEmailStore = defineStore('email', () => {
       }
     }
 
-    // 设置自动保存
-    window.addEventListener('beforeunload', () => {
-      console.log('🔄 Auto-saving before page unload')
-      saveAddressesToStorage()
-      if (selectedAddress.value) {
-        saveSelectedAddressToStorage()
-      }
-    })
-
-    // 后台定期同步到后端（不影响主要功能）
-    setInterval(async () => {
-      if (addresses.value.length > 0) {
-        console.log('🔄 Background sync to backend...')
-        try {
-          await saveAddressesToBackend()
-        } catch (error) {
-          console.warn('⚠️ Background sync failed:', error)
-        }
-      }
-    }, 5 * 60 * 1000)
+    // 设置自动保存和后台同步，避免重复初始化时创建多个监听器/定时器
+    registerBeforeUnloadSave()
+    startBackgroundSync()
   }
 
   return {
@@ -782,6 +879,7 @@ export const useEmailStore = defineStore('email', () => {
     clearSelection,
     startAutoRefresh,
     stopAutoRefresh,
+    stopBackgroundSync,
     silentRefreshMails,
     initializeStore,
 
@@ -807,6 +905,7 @@ export const useEmailStore = defineStore('email', () => {
       selectedAddress.value = null
       mails.value = []
       selectedMail.value = null
+      mailParseCache.clear()
 
       // 清理本地存储
       localStorage.removeItem(STORAGE_KEYS.ADDRESSES)
@@ -825,6 +924,8 @@ export const useEmailStore = defineStore('email', () => {
 
       // 停止自动刷新
       stopAutoRefresh()
+      stopBackgroundSync()
+      unregisterBeforeUnloadSave()
 
       console.log('🧹 All email data cleared for logout')
     },

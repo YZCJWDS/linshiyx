@@ -6,7 +6,7 @@
         <n-card size="small" embedded>
           <template #header>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <n-icon size="20" color="#18a058">
+              <n-icon size="20" color="var(--n-primary-color)">
                 <FolderIcon />
               </n-icon>
               <span>本地记录存储</span>
@@ -247,6 +247,19 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
+  --sent-item: rgba(255, 255, 255, 0.74);
+  --sent-hover: rgba(79, 143, 199, 0.1);
+  --sent-selected: linear-gradient(90deg, rgba(79, 143, 199, 0.18), rgba(255, 255, 255, 0.84));
+  --sent-border: rgba(116, 146, 174, 0.22);
+  --sent-shadow: 0 8px 22px rgba(48, 77, 108, 0.1);
+}
+
+[data-theme="dark"] .sent-mail-list {
+  --sent-item: rgba(12, 26, 45, 0.74);
+  --sent-hover: rgba(114, 184, 232, 0.13);
+  --sent-selected: linear-gradient(90deg, rgba(114, 184, 232, 0.22), rgba(12, 26, 45, 0.9));
+  --sent-border: rgba(148, 190, 225, 0.16);
+  --sent-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
 }
 
 .mail-list {
@@ -275,7 +288,7 @@ defineExpose({
 .mail-items {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .mail-item {
@@ -286,46 +299,38 @@ defineExpose({
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--sent-border);
+  background: var(--sent-item);
 }
 
 .mail-item:hover {
-  background: rgba(147, 112, 219, 0.1);
-  border-color: rgba(147, 112, 219, 0.3);
+  background: var(--sent-hover);
+  border-color: var(--n-primary-color);
   transform: translateY(-1px);
+  box-shadow: var(--sent-shadow);
 }
 
 .mail-item.selected {
-  background: linear-gradient(145deg,
-    rgba(147, 112, 219, 0.15) 0%,
-    rgba(138, 43, 226, 0.08) 100%);
-  border: 1px solid rgba(147, 112, 219, 0.4);
-  box-shadow:
-    inset 2px 2px 4px rgba(147, 112, 219, 0.2),
-    inset -2px -2px 4px rgba(255, 255, 255, 0.1),
-    0 2px 8px rgba(147, 112, 219, 0.15);
-  transform: translateY(1px);
+  background: var(--sent-selected);
+  border: 1px solid var(--n-primary-color);
+  box-shadow: inset 3px 0 0 var(--n-primary-color), var(--sent-shadow);
+  transform: none;
 }
 
 [data-theme="dark"] .mail-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sent-item);
+  border-color: var(--sent-border);
 }
 
 [data-theme="dark"] .mail-item:hover {
-  background: rgba(147, 112, 219, 0.15);
-  border-color: rgba(147, 112, 219, 0.4);
+  background: var(--sent-hover);
+  border-color: var(--n-primary-color);
 }
 
 [data-theme="dark"] .mail-item.selected {
-  background: linear-gradient(145deg,
-    rgba(147, 112, 219, 0.2) 0%,
-    rgba(138, 43, 226, 0.12) 100%);
-  border: 1px solid rgba(147, 112, 219, 0.5);
-  box-shadow:
-    inset 2px 2px 4px rgba(147, 112, 219, 0.3),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.2),
-    0 2px 8px rgba(147, 112, 219, 0.2);
+  background: var(--sent-selected);
+  border: 1px solid var(--n-primary-color);
+  box-shadow: inset 3px 0 0 var(--n-primary-color), var(--sent-shadow);
 }
 
 .mail-info {

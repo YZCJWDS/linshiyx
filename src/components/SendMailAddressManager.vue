@@ -176,6 +176,9 @@ import type { EmailAddress } from '@/types'
 const emailStore = useEmailStore()
 const uiStore = useUiStore()
 const message = useMessage()
+const emit = defineEmits<{
+  select: [address: EmailAddress | null]
+}>()
 
 // State
 const selectedFromAddress = ref<EmailAddress | null>(null)
@@ -210,6 +213,7 @@ const rules: FormRules = {
 // Methods
 function handleSelectFromAddress(address: EmailAddress) {
   selectedFromAddress.value = address
+  emit('select', address)
   console.log('📧 Selected from address:', address.address)
 }
 
@@ -230,7 +234,9 @@ async function handleCreateEmailAndClose() {
     await formRef.value.validate()
 
     const prefix = form.name.trim() || generateRandomString(8)
-    await emailStore.createAddress(prefix, form.domain)
+    const newAddress = await emailStore.createAddress(prefix, form.domain)
+    selectedFromAddress.value = newAddress
+    emit('select', newAddress)
 
     // Reset form and close modal
     form.name = ''
@@ -247,6 +253,7 @@ async function handleDeleteEmail(id: string) {
   await emailStore.deleteAddress(id)
   if (selectedFromAddress.value?.id === id) {
     selectedFromAddress.value = null
+    emit('select', null)
   }
 }
 
@@ -278,6 +285,19 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
+  --address-item: rgba(255, 255, 255, 0.74);
+  --address-hover: rgba(79, 143, 199, 0.1);
+  --address-selected: linear-gradient(90deg, rgba(79, 143, 199, 0.18), rgba(255, 255, 255, 0.84));
+  --address-border: rgba(116, 146, 174, 0.22);
+  --address-shadow: 0 8px 22px rgba(48, 77, 108, 0.1);
+}
+
+[data-theme="dark"] .send-mail-address-manager {
+  --address-item: rgba(12, 26, 45, 0.74);
+  --address-hover: rgba(114, 184, 232, 0.13);
+  --address-selected: linear-gradient(90deg, rgba(114, 184, 232, 0.22), rgba(12, 26, 45, 0.9));
+  --address-border: rgba(148, 190, 225, 0.16);
+  --address-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
 }
 
 .address-list {
@@ -293,7 +313,7 @@ defineExpose({
 .address-items {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .address-item {
@@ -304,26 +324,22 @@ defineExpose({
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--address-border);
+  background: var(--address-item);
 }
 
 .address-item:hover {
-  background: rgba(147, 112, 219, 0.1);
-  border-color: rgba(147, 112, 219, 0.3);
+  background: var(--address-hover);
+  border-color: var(--n-primary-color);
   transform: translateY(-1px);
+  box-shadow: var(--address-shadow);
 }
 
 .address-item.selected {
-  background: linear-gradient(145deg,
-    rgba(147, 112, 219, 0.15) 0%,
-    rgba(138, 43, 226, 0.08) 100%);
-  border: 1px solid rgba(147, 112, 219, 0.4);
-  box-shadow:
-    inset 2px 2px 4px rgba(147, 112, 219, 0.2),
-    inset -2px -2px 4px rgba(255, 255, 255, 0.1),
-    0 2px 8px rgba(147, 112, 219, 0.15);
-  transform: translateY(1px);
+  background: var(--address-selected);
+  border: 1px solid var(--n-primary-color);
+  box-shadow: inset 3px 0 0 var(--n-primary-color), var(--address-shadow);
+  transform: none;
 }
 
 .address-item.has-new-mails {
@@ -331,23 +347,19 @@ defineExpose({
 }
 
 [data-theme="dark"] .address-item {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--address-item);
+  border-color: var(--address-border);
 }
 
 [data-theme="dark"] .address-item:hover {
-  background: rgba(147, 112, 219, 0.15);
-  border-color: rgba(147, 112, 219, 0.4);
+  background: var(--address-hover);
+  border-color: var(--n-primary-color);
 }
 
 [data-theme="dark"] .address-item.selected {
-  background: linear-gradient(145deg,
-    rgba(147, 112, 219, 0.2) 0%,
-    rgba(138, 43, 226, 0.12) 100%);
-  border: 1px solid rgba(147, 112, 219, 0.5);
-  box-shadow:
-    inset 2px 2px 4px rgba(147, 112, 219, 0.3),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.2),
-    0 2px 8px rgba(147, 112, 219, 0.2);
+  background: var(--address-selected);
+  border: 1px solid var(--n-primary-color);
+  box-shadow: inset 3px 0 0 var(--n-primary-color), var(--address-shadow);
 }
 
 .address-info {

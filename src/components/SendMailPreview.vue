@@ -120,6 +120,17 @@ const hasPreviewData = computed(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  --preview-panel: rgba(255, 255, 255, 0.74);
+  --preview-panel-strong: rgba(255, 255, 255, 0.84);
+  --preview-border: rgba(116, 146, 174, 0.22);
+  --preview-shadow: 0 8px 24px rgba(48, 77, 108, 0.1);
+}
+
+[data-theme="dark"] .send-mail-preview {
+  --preview-panel: rgba(12, 26, 45, 0.74);
+  --preview-panel-strong: rgba(15, 31, 52, 0.82);
+  --preview-border: rgba(148, 190, 225, 0.16);
+  --preview-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .preview-content {
@@ -137,15 +148,16 @@ const hasPreviewData = computed(() => {
 }
 
 .mail-header {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--n-border-color);
+  background: var(--preview-panel);
+  border: 1px solid var(--preview-border);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
+  box-shadow: var(--preview-shadow);
 }
 
 [data-theme="dark"] .mail-header {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--preview-panel);
 }
 
 .header-row {
@@ -173,25 +185,26 @@ const hasPreviewData = computed(() => {
 }
 
 .mail-content {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--n-border-color);
+  background: var(--preview-panel);
+  border: 1px solid var(--preview-border);
   border-radius: 8px;
   margin-bottom: 16px;
   overflow: hidden;
+  box-shadow: var(--preview-shadow);
 }
 
 [data-theme="dark"] .mail-content {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--preview-panel);
 }
 
 .content-header {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--n-border-color);
-  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid var(--preview-border);
+  background: var(--preview-panel-strong);
 }
 
 [data-theme="dark"] .content-header {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--preview-panel-strong);
 }
 
 .content-header h3 {
@@ -206,7 +219,7 @@ const hasPreviewData = computed(() => {
 }
 
 .html-content {
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--preview-border);
   border-radius: 4px;
   background: #fff;
   min-height: 200px;
@@ -224,14 +237,14 @@ const hasPreviewData = computed(() => {
 }
 
 .text-content {
-  border: 1px solid var(--n-border-color);
+  border: 1px solid var(--preview-border);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(79, 143, 199, 0.06);
   min-height: 200px;
 }
 
 [data-theme="dark"] .text-content {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(9, 22, 39, 0.72);
 }
 
 .text-preview {
