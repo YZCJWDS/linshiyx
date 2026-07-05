@@ -5,7 +5,6 @@
       <div class="bg-image bg-left"></div>
       <div class="bg-image bg-right"></div>
       <div class="bg-overlay"></div>
-      <CosmicBackground class="login-cosmic-effects" variant="login" :density="0.92" />
     </div>
 
     <n-button
@@ -105,7 +104,6 @@ import {
 } from '@vicons/ionicons5'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores'
-import CosmicBackground from './CosmicBackground.vue'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -198,7 +196,6 @@ async function handleLogin() {
   top: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -229,25 +226,19 @@ async function handleLogin() {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
   background:
     linear-gradient(
       90deg,
-      rgba(235, 244, 251, 0.82) 0%,
-      rgba(235, 244, 251, 0.58) 34%,
-      rgba(235, 244, 251, 0.2) 62%,
-      rgba(235, 244, 251, 0.04) 100%
+      rgba(235, 244, 251, 0.9) 0%,
+      rgba(235, 244, 251, 0.66) 34%,
+      rgba(235, 244, 251, 0.26) 62%,
+      rgba(235, 244, 251, 0.08) 100%
     ),
     linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.2) 0%,
       rgba(216, 231, 243, 0.14) 100%
     );
-}
-
-.login-cosmic-effects {
-  --cosmic-z-index: 3;
-  --cosmic-opacity: 0.9;
 }
 
 .login-container {
@@ -425,20 +416,16 @@ async function handleLogin() {
   background:
     linear-gradient(
       90deg,
-      rgba(7, 17, 31, 0.82) 0%,
-      rgba(7, 17, 31, 0.64) 34%,
-      rgba(7, 17, 31, 0.34) 64%,
-      rgba(7, 17, 31, 0.12) 100%
+      rgba(7, 17, 31, 0.9) 0%,
+      rgba(7, 17, 31, 0.72) 34%,
+      rgba(7, 17, 31, 0.42) 64%,
+      rgba(7, 17, 31, 0.18) 100%
     ),
     linear-gradient(
       180deg,
       rgba(8, 20, 38, 0.12) 0%,
       rgba(4, 10, 20, 0.36) 100%
     );
-}
-
-[data-theme="dark"] .login-cosmic-effects {
-  --cosmic-opacity: 1;
 }
 
 [data-theme="dark"] .login-card {
@@ -534,9 +521,9 @@ async function handleLogin() {
     background:
       linear-gradient(
         180deg,
-        rgba(235, 244, 251, 0.58) 0%,
-        rgba(235, 244, 251, 0.38) 45%,
-        rgba(235, 244, 251, 0.82) 100%
+        rgba(235, 244, 251, 0.64) 0%,
+        rgba(235, 244, 251, 0.46) 45%,
+        rgba(235, 244, 251, 0.88) 100%
       );
   }
 
@@ -544,9 +531,9 @@ async function handleLogin() {
     background:
       linear-gradient(
         180deg,
-        rgba(7, 17, 31, 0.4) 0%,
-        rgba(7, 17, 31, 0.52) 45%,
-        rgba(7, 17, 31, 0.86) 100%
+        rgba(7, 17, 31, 0.48) 0%,
+        rgba(7, 17, 31, 0.58) 45%,
+        rgba(7, 17, 31, 0.9) 100%
       );
   }
 
@@ -588,11 +575,12 @@ async function handleLogin() {
 .background-layer::before {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background:
-    linear-gradient(112deg, rgba(255, 255, 255, 0.18), transparent 34%),
-    linear-gradient(180deg, rgba(126, 198, 255, 0.08), transparent 58%);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0));
   z-index: 2;
-  pointer-events: none;
 }
 </style>
