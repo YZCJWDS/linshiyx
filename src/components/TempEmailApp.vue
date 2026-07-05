@@ -8,6 +8,8 @@
         'background-error': backgroundError
       }"
     ></div>
+    <CosmicBackground class="app-cosmic-effects" variant="workspace" :density="1.22" />
+    <CosmicBackground class="app-cosmic-overlay" variant="workspace" :density="0.54" overlay />
 
     <!-- 内容层 -->
     <div class="app-content">
@@ -252,6 +254,7 @@ import EmailManager from './EmailManager.vue'
 import MailList from './MailList.vue'
 import MailDetail from './MailDetail.vue'
 import SendMailComposer from './SendMailComposer.vue'
+import CosmicBackground from './CosmicBackground.vue'
 
 const emailStore = useEmailStore()
 const uiStore = useUiStore()
@@ -446,9 +449,9 @@ onUnmounted(() => {
   position: relative;
   overflow: hidden;
   color: var(--n-text-color);
-  --app-panel: rgba(248, 252, 255, 0.74);
-  --app-panel-strong: rgba(255, 255, 255, 0.86);
-  --app-panel-soft: rgba(239, 247, 252, 0.64);
+  --app-panel: rgba(248, 252, 255, 0.68);
+  --app-panel-strong: rgba(255, 255, 255, 0.8);
+  --app-panel-soft: rgba(239, 247, 252, 0.58);
   --app-border: rgba(116, 146, 174, 0.24);
   --app-border-strong: rgba(255, 255, 255, 0.62);
   --app-shadow: 0 18px 48px rgba(48, 77, 108, 0.16);
@@ -457,9 +460,9 @@ onUnmounted(() => {
 }
 
 [data-theme="dark"] .temp-email-app {
-  --app-panel: rgba(11, 24, 42, 0.76);
-  --app-panel-strong: rgba(15, 31, 52, 0.86);
-  --app-panel-soft: rgba(8, 19, 34, 0.66);
+  --app-panel: rgba(11, 24, 42, 0.62);
+  --app-panel-strong: rgba(15, 31, 52, 0.76);
+  --app-panel-soft: rgba(8, 19, 34, 0.5);
   --app-border: rgba(148, 190, 225, 0.18);
   --app-border-strong: rgba(148, 190, 225, 0.26);
   --app-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
@@ -484,6 +487,16 @@ onUnmounted(() => {
   filter: saturate(0.96) contrast(0.98);
 }
 
+.app-cosmic-effects {
+  --cosmic-z-index: 0;
+  --cosmic-opacity: 0.88;
+}
+
+.app-cosmic-overlay {
+  --cosmic-z-index: 2;
+  --cosmic-opacity: 0.34;
+}
+
 /* 背景遮罩层 - 提供更好的可读性 */
 .app-background::after {
   content: '';
@@ -495,10 +508,10 @@ onUnmounted(() => {
   background:
     linear-gradient(
       135deg,
-      rgba(241, 248, 253, 0.88) 0%,
-      rgba(241, 248, 253, 0.74) 34%,
-      rgba(241, 248, 253, 0.56) 60%,
-      rgba(241, 248, 253, 0.78) 100%
+      rgba(241, 248, 253, 0.82) 0%,
+      rgba(241, 248, 253, 0.66) 34%,
+      rgba(241, 248, 253, 0.48) 60%,
+      rgba(241, 248, 253, 0.7) 100%
     ),
     linear-gradient(
       180deg,
@@ -524,13 +537,21 @@ onUnmounted(() => {
   background:
     linear-gradient(
       135deg,
-      rgba(7, 17, 31, 0.88) 0%,
-      rgba(7, 17, 31, 0.78) 34%,
-      rgba(7, 17, 31, 0.58) 58%,
-      rgba(7, 17, 31, 0.82) 100%
+      rgba(7, 17, 31, 0.82) 0%,
+      rgba(7, 17, 31, 0.7) 34%,
+      rgba(7, 17, 31, 0.48) 58%,
+      rgba(7, 17, 31, 0.76) 100%
     ),
     radial-gradient(circle at 76% 16%, rgba(88, 158, 212, 0.12), transparent 32%);
   backdrop-filter: blur(1.5px);
+}
+
+[data-theme="dark"] .app-cosmic-effects {
+  --cosmic-opacity: 1;
+}
+
+[data-theme="dark"] .app-cosmic-overlay {
+  --cosmic-opacity: 0.5;
 }
 
 /* 背景图片加载状态 */
