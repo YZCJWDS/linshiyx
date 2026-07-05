@@ -283,7 +283,7 @@ const showCreateModal = ref(false)
 const formRef = ref<FormInst | null>(null)
 const form = reactive({
   name: '',
-  domain: COMMON_DOMAINS[0]
+  domain: 'yzcjwds.xyz'
 })
 
 // Loading states
@@ -298,7 +298,7 @@ const modalStyle = computed(() => ({
 
 // Domain options for select - 从store获取
 const domainOptions = computed(() => {
-  const domains = emailStore.userSettings?.domains || COMMON_DOMAINS
+  const domains = emailStore.userSettings?.domains || ['yzcjwds.xyz']
   return domains.map(domain => ({
     label: domain,
     value: domain

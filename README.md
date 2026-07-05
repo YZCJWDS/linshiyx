@@ -188,7 +188,7 @@ chmod +x deploy.sh
 {
   "📧 邮件发送记录": {
     "📅 发送时间": "2024/01/01 14:30:45",
-    "👤 发件人": "abc123@npu.codes",
+    "👤 发件人": "abc123@yzcjwds.xyz",
     "📮 收件人": "user@example.com",
     "📝 邮件主题": "测试邮件",
     "📄 内容格式": "纯文本格式",
@@ -231,12 +231,10 @@ chmod +x deploy.sh
 
 ```bash
 # .env.production
-VITE_API_BASE_URL=https://api.npu.codes
-VITE_DEFAULT_MAIL_DOMAIN=npu.codes
+VITE_API_BASE_URL=https://your-api-domain.com
 
 # .env.development
 VITE_API_BASE_URL=http://localhost:8787
-VITE_DEFAULT_MAIL_DOMAIN=npu.codes
 ```
 
 ### 安全头部
@@ -298,7 +296,7 @@ VITE_DEFAULT_MAIL_DOMAIN=npu.codes
   ```json
   {
     "from_name": "发件人姓名（可选）",
-    "from_mail": "sender@npu.codes",
+    "from_mail": "sender@yzcjwds.xyz",
     "to_name": "收件人姓名（可选）",
     "to_mail": "recipient@example.com",
     "subject": "邮件主题",

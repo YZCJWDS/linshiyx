@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { API_BASE_URL } from '@/utils/config'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -17,7 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 使用 /admin/address 来验证，因为我们知道这个API存在且需要管理员权限
       console.log('🔐 Verifying admin password with backend...')
 
-      const response = await fetch(`${API_BASE_URL}/admin/address?limit=1&offset=0`, {
+      const response = await fetch('https://apimail.yzcjwds.xyz/admin/address?limit=1&offset=0', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

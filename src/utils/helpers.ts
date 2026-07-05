@@ -1,5 +1,3 @@
-import { DEFAULT_MAIL_DOMAIN } from '@/utils/config'
-
 // Utility functions for the application
 
 // Generate random string for email prefix
@@ -185,7 +183,7 @@ export function generateEmailAddress(prefix: string, domain: string): string {
 
 // Common email domains - 使用你的真实域名
 export const COMMON_DOMAINS = [
-  DEFAULT_MAIL_DOMAIN
+  'yzcjwds.xyz'
 ]
 
 // Debounce function for search inputs
